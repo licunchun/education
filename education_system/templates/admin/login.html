@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-container">
+    <h2>管理员登录</h2>
+    <form action="#" method="post">
+        <div class="form-group">
+            <label for="admin_id">管理员ID</label>
+            <input type="text" id="admin_id" name="admin_id" required>
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn">登录</button>
+        </div>
+        <div class="form-links">
+            <a href="#">忘记密码？</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

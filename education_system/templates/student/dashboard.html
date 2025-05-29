@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>学生控制面板</h2>
+    
+    <div class="dashboard-section">
+        <h3>个人信息</h3>
+        <div class="info-card">
+            <div class="info-item">
+                <span class="info-label">学号:</span>
+                <span class="info-value">{{ student.id }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">姓名:</span>
+                <span class="info-value">{{ student.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">专业:</span>
+                <span class="info-value">{{ student.major }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">班级:</span>
+                <span class="info-value">{{ student.class_name }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-section">
+        <h3>功能菜单</h3>
+        <div class="menu-cards">
+            <div class="menu-card">
+                <h4>选课系统</h4>
+                <p>查看课程、选课、退课</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>成绩查询</h4>
+                <p>查看个人课程成绩</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>学费缴纳</h4>
+                <p>查看学费信息、在线缴费</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-section">
+        <h3>近期通知</h3>
+        <div class="notification-list">
+            <div class="notification-item">
+                <div class="notification-title">选课开始通知</div>
+                <div class="notification-date">2025-05-15</div>
+                <div class="notification-content">下学期选课将于2025年6月1日开始，请同学们及时登录系统进行选课。</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

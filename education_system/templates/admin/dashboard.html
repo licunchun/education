@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>管理员控制面板</h2>
+    
+    <div class="dashboard-section">
+        <h3>系统状态</h3>
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">学生数量:</span>
+                <span class="status-value">2500</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">教师数量:</span>
+                <span class="status-value">150</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">开设课程:</span>
+                <span class="status-value">320</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">待审批事项:</span>
+                <span class="status-value">15</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-section">
+        <h3>功能菜单</h3>
+        <div class="menu-cards">
+            <div class="menu-card">
+                <h4>学生管理</h4>
+                <p>管理学生信息</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>教师管理</h4>
+                <p>管理教师信息和课程</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>专业管理</h4>
+                <p>管理专业和班级信息</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>课程管理</h4>
+                <p>管理课程信息</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>成绩管理</h4>
+                <p>统计、审核学生成绩</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+            <div class="menu-card">
+                <h4>审批管理</h4>
+                <p>审批注册、开课申请</p>
+                <a href="#" class="btn">进入</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-section">
+        <h3>系统日志</h3>
+        <div class="log-list">
+            <div class="log-item">
+                <div class="log-time">2025-05-29 14:25:30</div>
+                <div class="log-type">用户登录</div>
+                <div class="log-content">管理员 admin001 登录系统</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

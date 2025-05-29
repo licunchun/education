@@ -1,0 +1,257 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f4f4;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* 头部样式 */
+header {
+    background-color: #0066cc;
+    color: white;
+    padding: 1rem 0;
+}
+
+header h1 {
+    display: inline-block;
+    margin-right: 2rem;
+}
+
+header nav {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+header nav ul {
+    list-style: none;
+}
+
+header nav ul li {
+    display: inline-block;
+    margin-right: 1rem;
+}
+
+header nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+header nav ul li a:hover {
+    text-decoration: underline;
+}
+
+/* 主内容区域 */
+main {
+    padding: 2rem 0;
+    min-height: 70vh;
+}
+
+/* 欢迎页面样式 */
+.welcome-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.welcome-section h2 {
+    color: #0066cc;
+    margin-bottom: 1rem;
+}
+
+.portal-links {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 2rem;
+}
+
+.portal {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    width: 30%;
+    text-align: center;
+}
+
+.portal h3 {
+    color: #0066cc;
+    margin-bottom: 1rem;
+}
+
+.portal p {
+    margin-bottom: 1.5rem;
+}
+
+/* 按钮样式 */
+.btn {
+    display: inline-block;
+    background-color: #0066cc;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 3px;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn:hover {
+    background-color: #0052a3;
+}
+
+/* 登录表单样式 */
+.login-container {
+    max-width: 400px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.login-container h2 {
+    text-align: center;
+    color: #0066cc;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.form-links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.form-links a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.form-links a:hover {
+    text-decoration: underline;
+}
+
+/* 页脚样式 */
+footer {
+    background-color: #333;
+    color: white;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+/* 控制面板样式 */
+.dashboard-container {
+    padding: 2rem 0;
+}
+
+.dashboard-container h2 {
+    color: #0066cc;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.dashboard-section {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-section h3 {
+    color: #0066cc;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.info-card, .status-card {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.info-item, .status-item {
+    width: 50%;
+    padding: 0.5rem;
+}
+
+.info-label, .status-label {
+    font-weight: bold;
+    display: inline-block;
+    width: 80px;
+}
+
+.menu-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.menu-card {
+    width: 30%;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.menu-card h4 {
+    color: #0066cc;
+    margin-bottom: 0.5rem;
+}
+
+.menu-card p {
+    margin-bottom: 1rem;
+    color: #666;
+}
+
+.course-item, .notification-item, .log-item {
+    border-bottom: 1px solid #eee;
+    padding: 1rem 0;
+}
+
+.course-name, .notification-title {
+    font-weight: bold;
+    color: #0066cc;
+}
+
+.course-info, .notification-date, .log-time {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}
+
+.btn-small {
+    padding: 0.2rem 0.8rem;
+    font-size: 0.9rem;
+}
