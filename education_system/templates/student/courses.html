@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">选课系统</h2>
+            
+            <!-- 已选课程 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4><i class="fas fa-check-circle text-success"></i> 已选课程</h4>
+                </div>
+                <div class="card-body">
+                    {% if selected_courses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>课程名称</th>
+                                    <th>授课教师</th>
+                                    <th>学分</th>
+                                    <th>学时</th>
+                                    <th>课程类型</th>
+                                    <th>选课时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in selected_courses %}
+                                <tr>
+                                    <td>{{ course.course_name }}</td>
+                                    <td>{{ course.teacher_name }}</td>
+                                    <td>{{ course.credits }}</td>
+                                    <td>{{ course.hours }}</td>                                    <td>
+                                        <span class="badge badge-{% if course.course_type == '必修' %}danger{% else %}info{% endif %}">
+                                            {{ course.course_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ course.selection_time if course.selection_time else 'N/A' }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="dropCourse({{ course.selection_id }})">
+                                            退课
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">您还没有选择任何课程。</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 可选课程 -->
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-plus-circle text-primary"></i> 可选课程</h4>
+                </div>
+                <div class="card-body">
+                    {% if available_courses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>课程名称</th>
+                                    <th>授课教师</th>
+                                    <th>学分</th>
+                                    <th>学时</th>
+                                    <th>课程类型</th>
+                                    <th>容量</th>
+                                    <th>已选</th>
+                                    <th>课程描述</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in available_courses %}
+                                <tr>
+                                    <td><strong>{{ course.course_name }}</strong></td>
+                                    <td>{{ course.teacher_name }} ({{ course.title }})</td>
+                                    <td>{{ course.credits }}</td>
+                                    <td>{{ course.hours }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if course.course_type == '必修' %}danger{% else %}info{% endif %}">
+                                            {{ course.course_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ course.capacity }}</td>
+                                    <td>{{ course.selected_count }}</td>
+                                    <td>
+                                        {% if course.description %}
+                                        <small class="text-muted">{{ course.description[:50] }}...</small>
+                                        {% else %}
+                                        <small class="text-muted">无描述</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if course.selected_count < course.capacity %}
+                                        <button class="btn btn-sm btn-success" onclick="selectCourse({{ course.id }})">
+                                            选课
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            已满
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">暂无可选课程。</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectCourse(offeredCourseId) {
+    if (confirm('确定要选择这门课程吗？')) {
+        $.post('/student/select_course', {
+            offered_course_id: offeredCourseId
+        }, function(response) {
+            if (response.status === 'success') {
+                alert(response.message);
+                location.reload();
+            } else {
+                alert('选课失败: ' + response.message);
+            }
+        }).fail(function() {
+            alert('网络错误，请重试');
+        });
+    }
+}
+
+function dropCourse(selectionId) {
+    if (confirm('确定要退选这门课程吗？')) {
+        $.post('/student/drop_course', {
+            selection_id: selectionId
+        }, function(response) {
+            if (response.status === 'success') {
+                alert(response.message);
+                location.reload();
+            } else {
+                alert('退课失败: ' + response.message);
+            }
+        }).fail(function() {
+            alert('网络错误，请重试');
+        });
+    }
+}
+</script>
+{% endblock %}

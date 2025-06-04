@@ -28,16 +28,15 @@
     
     <div class="dashboard-section">
         <h3>功能菜单</h3>
-        <div class="menu-cards">
-            <div class="menu-card">
+        <div class="menu-cards">            <div class="menu-card">
                 <h4>选课系统</h4>
                 <p>查看课程、选课、退课</p>
-                <a href="#" class="btn">进入</a>
+                <a href="{{ url_for('student_courses') }}" class="btn">进入</a>
             </div>
             <div class="menu-card">
                 <h4>成绩查询</h4>
                 <p>查看个人课程成绩</p>
-                <a href="#" class="btn">进入</a>
+                <a href="{{ url_for('student_grades') }}" class="btn">进入</a>
             </div>
             <div class="menu-card">
                 <h4>学费缴纳</h4>

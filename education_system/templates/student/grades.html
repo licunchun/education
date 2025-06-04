@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">成绩查询</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-chart-line"></i> 我的成绩</h4>
+                </div>
+                <div class="card-body">
+                    {% if grades %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>学年学期</th>
+                                    <th>课程名称</th>
+                                    <th>授课教师</th>
+                                    <th>学分</th>
+                                    <th>平时成绩</th>
+                                    <th>考试成绩</th>
+                                    <th>期末成绩</th>
+                                    <th>绩点</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                <tr>
+                                    <td>{{ grade.academic_year }} {{ grade.semester }}</td>
+                                    <td><strong>{{ grade.course_name }}</strong></td>
+                                    <td>{{ grade.teacher_name }}</td>
+                                    <td>{{ grade.credits }}</td>
+                                    <td>
+                                        {% if grade.regular_grade %}
+                                        {{ "%.1f"|format(grade.regular_grade) }}
+                                        {% else %}
+                                        <span class="text-muted">未录入</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if grade.exam_grade %}
+                                        {{ "%.1f"|format(grade.exam_grade) }}
+                                        {% else %}
+                                        <span class="text-muted">未录入</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if grade.final_grade %}
+                                        <strong 
+                                        {% if grade.final_grade >= 90 %}class="text-success"
+                                        {% elif grade.final_grade >= 80 %}class="text-info"
+                                        {% elif grade.final_grade >= 70 %}class="text-warning"
+                                        {% elif grade.final_grade >= 60 %}class="text-primary"
+                                        {% else %}class="text-danger"
+                                        {% endif %}>
+                                            {{ "%.1f"|format(grade.final_grade) }}
+                                        </strong>
+                                        {% else %}
+                                        <span class="text-muted">未录入</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if grade.gpa %}
+                                        <span class="badge badge-{% if grade.gpa >= 3.5 %}success{% elif grade.gpa >= 2.5 %}info{% elif grade.gpa >= 1.5 %}warning{% else %}danger{% endif %}">
+                                            {{ "%.1f"|format(grade.gpa) }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if grade.status == '已审核' %}success{% else %}warning{% endif %}">
+                                            {{ grade.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 成绩统计 -->                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">成绩统计</h6>
+                                    {% set total_credits = grades|selectattr('final_grade')|map(attribute='credits')|sum %}
+                                    {% set valid_grades = grades|selectattr('final_grade')|list %}
+                                    <p><strong>总学分:</strong> {{ "%.1f"|format(total_credits) }}</p>
+                                    <p><strong>平均绩点:</strong> 
+                                        {% if valid_grades|length > 0 %}
+                                        {{ "%.2f"|format((valid_grades|map(attribute='gpa')|sum) / (valid_grades|length)) }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无成绩记录</p>
+                        <p class="text-muted">请先选课，等待教师录入成绩</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

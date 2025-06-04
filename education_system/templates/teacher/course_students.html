@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>{{ course.course_name }} - 学生名单</h2>
+                <a href="{{ url_for('teacher_course_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回课程管理
+                </a>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-users"></i> 选课学生 ({{ students|length }}人)</h5>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <small class="text-muted">
+                                {{ course.academic_year }} {{ course.semester }} | 
+                                容量: {{ course.capacity }}人
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>学号</th>
+                                    <th>姓名</th>
+                                    <th>性别</th>
+                                    <th>选课时间</th>
+                                    <th>平时成绩</th>
+                                    <th>期末成绩</th>
+                                    <th>总评成绩</th>
+                                    <th>绩点</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr id="student-row-{{ student.id }}">
+                                    <td><strong>{{ student.id }}</strong></td>
+                                    <td>{{ student.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if student.gender == 'M' %}primary{% else %}pink{% endif %}">
+                                            {{ '男' if student.gender == 'M' else '女' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ student.selection_time.strftime('%Y-%m-%d') if student.selection_time else '未知' }}</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm grade-input" 
+                                               id="regular-{{ student.id }}" 
+                                               value="{{ student.regular_grade if student.regular_grade is not none else '' }}" 
+                                               min="0" max="100" step="0.1" placeholder="平时成绩">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm grade-input" 
+                                               id="exam-{{ student.id }}" 
+                                               value="{{ student.exam_grade if student.exam_grade is not none else '' }}" 
+                                               min="0" max="100" step="0.1" placeholder="期末成绩">
+                                    </td>
+                                    <td>
+                                        <span id="final-{{ student.id }}" class="badge badge-{% if student.final_grade %}{% if student.final_grade >= 90 %}success{% elif student.final_grade >= 80 %}primary{% elif student.final_grade >= 70 %}warning{% elif student.final_grade >= 60 %}info{% else %}danger{% endif %}{% else %}secondary{% endif %}">
+                                            {{ "%.1f"|format(student.final_grade) if student.final_grade is not none else '未录入' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span id="gpa-{{ student.id }}" class="badge badge-{% if student.gpa %}{% if student.gpa >= 3.5 %}success{% elif student.gpa >= 3.0 %}primary{% elif student.gpa >= 2.0 %}warning{% elif student.gpa >= 1.0 %}info{% else %}danger{% endif %}{% else %}secondary{% endif %}">
+                                            {{ "%.1f"|format(student.gpa) if student.gpa is not none else '未计算' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="saveGrade('{{ student.id }}', {{ course.id }})">
+                                            <i class="fas fa-save"></i> 保存
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button class="btn btn-primary" onclick="batchSaveGrades()">
+                                    <i class="fas fa-save"></i> 批量保存所有成绩
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="exportGrades()">
+                                        <i class="fas fa-download"></i> 导出成绩
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showGradeStats()">
+                                        <i class="fas fa-chart-bar"></i> 成绩统计
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">该课程暂无学生选课</h5>
+                        <p class="text-muted">请等待学生选课后再进行成绩管理</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 成绩统计模态框 -->
+<div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">成绩统计</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="statsContent">
+                <!-- 统计内容将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 保存单个学生成绩
+function saveGrade(studentId, courseId) {
+    const regularGrade = document.getElementById(`regular-${studentId}`).value;
+    const examGrade = document.getElementById(`exam-${studentId}`).value;
+    
+    if (!regularGrade && !examGrade) {
+        alert('请至少输入一项成绩');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('student_id', studentId);
+    formData.append('offered_course_id', courseId);
+    formData.append('regular_grade', regularGrade);
+    formData.append('exam_grade', examGrade);
+    
+    fetch('/teacher/update_grade', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // 更新显示的总评成绩和绩点
+            document.getElementById(`final-${studentId}`).textContent = data.final_grade;
+            document.getElementById(`gpa-${studentId}`).textContent = data.gpa;
+            
+            // 更新badge样式
+            updateGradeBadge(`final-${studentId}`, data.final_grade);
+            updateGpaBadge(`gpa-${studentId}`, data.gpa);
+            
+            // 显示成功消息
+            showMessage('成绩保存成功', 'success');
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('保存失败，请重试', 'danger');
+    });
+}
+
+// 批量保存所有成绩
+function batchSaveGrades() {
+    const rows = document.querySelectorAll('tbody tr');
+    let saveCount = 0;
+    let totalCount = 0;
+    
+    rows.forEach(row => {
+        const studentId = row.id.split('-')[2];
+        const regularInput = document.getElementById(`regular-${studentId}`);
+        const examInput = document.getElementById(`exam-${studentId}`);
+        
+        if (regularInput.value || examInput.value) {
+            totalCount++;
+            saveGrade(studentId, {{ course.id }});
+            saveCount++;
+        }
+    });
+    
+    if (totalCount === 0) {
+        showMessage('没有需要保存的成绩', 'warning');
+    } else {
+        showMessage(`正在批量保存 ${totalCount} 条成绩...`, 'info');
+    }
+}
+
+// 更新成绩badge样式
+function updateGradeBadge(elementId, grade) {
+    const element = document.getElementById(elementId);
+    element.className = 'badge';
+    
+    if (grade >= 90) {
+        element.classList.add('badge-success');
+    } else if (grade >= 80) {
+        element.classList.add('badge-primary');
+    } else if (grade >= 70) {
+        element.classList.add('badge-warning');
+    } else if (grade >= 60) {
+        element.classList.add('badge-info');
+    } else {
+        element.classList.add('badge-danger');
+    }
+}
+
+// 更新绩点badge样式
+function updateGpaBadge(elementId, gpa) {
+    const element = document.getElementById(elementId);
+    element.className = 'badge';
+    
+    if (gpa >= 3.5) {
+        element.classList.add('badge-success');
+    } else if (gpa >= 3.0) {
+        element.classList.add('badge-primary');
+    } else if (gpa >= 2.0) {
+        element.classList.add('badge-warning');
+    } else if (gpa >= 1.0) {
+        element.classList.add('badge-info');
+    } else {
+        element.classList.add('badge-danger');
+    }
+}
+
+// 显示消息
+function showMessage(message, type) {
+    // 创建消息提示
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    // 插入到页面顶部
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// 导出成绩
+function exportGrades() {
+    // 这里可以实现成绩导出功能
+    showMessage('导出功能开发中...', 'info');
+}
+
+// 显示成绩统计
+function showGradeStats() {
+    const students = document.querySelectorAll('tbody tr');
+    let totalStudents = students.length;
+    let gradedStudents = 0;
+    let passCount = 0;
+    let gradeSum = 0;
+    let gradeDistribution = {
+        'A': 0,  // 90-100
+        'B': 0,  // 80-89
+        'C': 0,  // 70-79
+        'D': 0,  // 60-69
+        'F': 0   // <60
+    };
+    
+    students.forEach(row => {
+        const studentId = row.id.split('-')[2];
+        const finalSpan = document.getElementById(`final-${studentId}`);
+        const gradeText = finalSpan.textContent;
+        
+        if (gradeText !== '未录入') {
+            gradedStudents++;
+            const grade = parseFloat(gradeText);
+            gradeSum += grade;
+            
+            if (grade >= 60) passCount++;
+            
+            if (grade >= 90) gradeDistribution.A++;
+            else if (grade >= 80) gradeDistribution.B++;
+            else if (grade >= 70) gradeDistribution.C++;
+            else if (grade >= 60) gradeDistribution.D++;
+            else gradeDistribution.F++;
+        }
+    });
+    
+    const avgGrade = gradedStudents > 0 ? (gradeSum / gradedStudents).toFixed(1) : 0;
+    const passRate = gradedStudents > 0 ? ((passCount / gradedStudents) * 100).toFixed(1) : 0;
+    
+    const statsContent = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>基本统计</h6>
+                <p><strong>总人数:</strong> ${totalStudents}</p>
+                <p><strong>已录成绩:</strong> ${gradedStudents}</p>
+                <p><strong>平均分:</strong> ${avgGrade}</p>
+                <p><strong>及格率:</strong> ${passRate}%</p>
+            </div>
+            <div class="col-md-6">
+                <h6>成绩分布</h6>
+                <p><strong>A (90-100):</strong> ${gradeDistribution.A}人</p>
+                <p><strong>B (80-89):</strong> ${gradeDistribution.B}人</p>
+                <p><strong>C (70-79):</strong> ${gradeDistribution.C}人</p>
+                <p><strong>D (60-69):</strong> ${gradeDistribution.D}人</p>
+                <p><strong>F (<60):</strong> ${gradeDistribution.F}人</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('statsContent').innerHTML = statsContent;
+    $('#statsModal').modal('show');
+}
+
+// 页面加载完成后绑定事件
+document.addEventListener('DOMContentLoaded', function() {
+    // 自动计算总评成绩
+    document.querySelectorAll('.grade-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const studentId = this.id.split('-')[1];
+            const regularInput = document.getElementById(`regular-${studentId}`);
+            const examInput = document.getElementById(`exam-${studentId}`);
+            
+            const regular = parseFloat(regularInput.value) || 0;
+            const exam = parseFloat(examInput.value) || 0;
+            
+            if (regular > 0 || exam > 0) {
+                const finalGrade = regular * 0.4 + exam * 0.6;
+                document.getElementById(`final-${studentId}`).textContent = finalGrade.toFixed(1);
+                updateGradeBadge(`final-${studentId}`, finalGrade);
+                
+                // 计算GPA
+                let gpa = 0;
+                if (finalGrade >= 90) gpa = 4.0;
+                else if (finalGrade >= 80) gpa = 3.0;
+                else if (finalGrade >= 70) gpa = 2.0;
+                else if (finalGrade >= 60) gpa = 1.0;
+                
+                document.getElementById(`gpa-${studentId}`).textContent = gpa.toFixed(1);
+                updateGpaBadge(`gpa-${studentId}`, gpa);
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.grade-input {
+    width: 80px;
+    text-align: center;
+}
+
+.badge-pink {
+    background-color: #e91e63;
+    color: white;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-header {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+{% endblock %}
