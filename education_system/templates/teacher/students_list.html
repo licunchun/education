@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>学生名单</h2>
+                <a href="{{ url_for('teacher_course_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回课程管理
+                </a>
+            </div>
+            
+            <!-- 课程信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4><i class="fas fa-info-circle"></i> 课程信息</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>课程代码：</strong>{{ course.code }}</p>
+                            <p><strong>课程名称：</strong>{{ course.name }}</p>
+                            <p><strong>学年学期：</strong>{{ course.academic_year }} {{ course.semester }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>上课时间：</strong>{{ course.schedule or '待安排' }}</p>
+                            <p><strong>上课地点：</strong>{{ course.location or '待安排' }}</p>
+                            <p><strong>选课人数：</strong>{{ students|length }} 人</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 学生列表 -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-users"></i> 学生列表</h4>
+                    <div>
+                        <a href="{{ url_for('teacher_input_grades', course_id=course.id) }}" class="btn btn-success">
+                            <i class="fas fa-edit"></i> 录入成绩
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>学号</th>
+                                    <th>姓名</th>
+                                    <th>专业</th>
+                                    <th>班级</th>
+                                    <th>选课时间</th>
+                                    <th>平时成绩</th>
+                                    <th>考试成绩</th>
+                                    <th>总评成绩</th>
+                                    <th>绩点</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.name }}</td>
+                                    <td>{{ student.major }}</td>
+                                    <td>{{ student.class_name }}</td>
+                                    <td>{{ student.selection_time }}</td>
+                                    <td>
+                                        {% if student.regular_grade %}
+                                            <span class="badge badge-info">{{ student.regular_grade }}</span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.exam_grade %}
+                                            <span class="badge badge-info">{{ student.exam_grade }}</span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.final_grade %}
+                                            <span class="badge badge-{% if student.final_grade >= 60 %}success{% else %}danger{% endif %}">
+                                                {{ student.final_grade }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.gpa %}
+                                            <span class="badge badge-primary">{{ student.gpa }}</span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if student.grade_status == '已录入' %}success{% elif student.grade_status == '已审核' %}primary{% else %}secondary{% endif %}">
+                                            {{ student.grade_status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无学生选择该课程</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

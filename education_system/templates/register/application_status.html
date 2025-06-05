@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请状态查询 - 学籍管理系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .search-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .result-section {
+            margin-top: 30px;
+        }
+        
+        .application-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .application-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .review-section {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .review-title {
+            color: #1565c0;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .no-result {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .no-result i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .application-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>申请状态查询</h1>
+            <p>输入申请信息查询您的注册申请状态</p>
+        </div>
+
+        <div class="search-section">
+            <form method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="search_type">查询方式 <span class="required">*</span></label>
+                        <select id="search_type" name="search_type" required>
+                            <option value="">请选择查询方式</option>
+                            <option value="id" {{ 'selected' if search_type == 'id' }}>按申请编号查询</option>
+                            <option value="id_card" {{ 'selected' if search_type == 'id_card' }}>按身份证号查询</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="search_value">查询内容 <span class="required">*</span></label>
+                        <input type="text" id="search_value" name="search_value" 
+                               value="{{ search_value or '' }}" 
+                               placeholder="请输入申请编号或身份证号" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">查询</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if search_performed %}
+            <div class="result-section">
+                {% if applications %}
+                    {% for app in applications %}
+                        <div class="application-card">
+                            <div class="application-header">
+                                <div class="application-id">申请编号：#{{ app.id }}</div>
+                                <div class="status-badge status-{{ app.status_class }}">
+                                    {{ app.status }}
+                                </div>
+                            </div>
+                            
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">申请人</div>
+                                    <div class="info-value">{{ app.real_name }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">申请类型</div>
+                                    <div class="info-value">{{ '学生注册' if app.applicant_type == 'student' else '教师注册' }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">{{ '预分配学号' if app.applicant_type == 'student' else '预分配工号' }}</div>
+                                    <div class="info-value">{{ app.applicant_id or '待分配' }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">申请时间</div>
+                                    <div class="info-value">{{ app.application_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                                </div>
+                            </div>
+                            
+                            {% if app.applicant_type == 'student' %}
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">专业</div>
+                                        <div class="info-value">{{ app.major_name or '未设置' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">班级</div>
+                                        <div class="info-value">{{ app.class_name or '未分配' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">籍贯</div>
+                                        <div class="info-value">{{ app.hometown or '未填写' }}</div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">所属学院</div>
+                                        <div class="info-value">{{ app.college or '未设置' }}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">职称</div>
+                                        <div class="info-value">{{ app.title or '未设置' }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if app.status == '已通过' %}
+                                <div class="alert alert-info">
+                                    <strong>恭喜！</strong>您的申请已通过审核。账户已创建，初始密码为：123456，请及时登录并修改密码。
+                                </div>
+                            {% elif app.status == '已拒绝' %}
+                                <div class="alert alert-warning">
+                                    <strong>很抱歉，</strong>您的申请未通过审核。如有疑问，请联系管理员。
+                                </div>
+                            {% endif %}
+                            
+                            {% if app.review_time or app.review_comments %}
+                                <div class="review-section">
+                                    <div class="review-title">审核信息</div>
+                                    {% if app.review_time %}
+                                        <div style="margin-bottom: 8px;">
+                                            <strong>审核时间：</strong>{{ app.review_time.strftime('%Y-%m-%d %H:%M') }}
+                                        </div>
+                                    {% endif %}
+                                    {% if app.reviewer_id %}
+                                        <div style="margin-bottom: 8px;">
+                                            <strong>审核人员：</strong>{{ app.reviewer_id }}
+                                        </div>
+                                    {% endif %}
+                                    {% if app.review_comments %}
+                                        <div>
+                                            <strong>审核意见：</strong>{{ app.review_comments }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-result">
+                        <i>❌</i>
+                        <h3>未找到相关申请</h3>
+                        <p>请检查输入的信息是否正确，或联系管理员确认。</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        // 根据查询方式更新输入框占位符
+        document.getElementById('search_type').addEventListener('change', function() {
+            const searchValue = document.getElementById('search_value');
+            if (this.value === 'id') {
+                searchValue.placeholder = '请输入申请编号，如：1';
+            } else if (this.value === 'id_card') {
+                searchValue.placeholder = '请输入18位身份证号码';
+            } else {
+                searchValue.placeholder = '请输入申请编号或身份证号';
+            }
+        });
+    </script>
+</body>
+</html>

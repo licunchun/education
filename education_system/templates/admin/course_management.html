@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-book"></i> 课程管理</h2>
+                <div>
+                    <button class="btn btn-success" data-toggle="modal" data-target="#addOfferedCourseModal">
+                        <i class="fas fa-plus"></i> 开设课程
+                    </button>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addCourseModal">
+                        <i class="fas fa-plus"></i> 添加课程
+                    </button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回控制面板
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 已开设课程 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-alt"></i> 已开设课程 ({{ offered_courses|length }}门)</h5>
+                </div>
+                <div class="card-body">
+                    {% if offered_courses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>课程名称</th>
+                                    <th>任课教师</th>
+                                    <th>学年学期</th>
+                                    <th>学分</th>
+                                    <th>容量</th>
+                                    <th>已选人数</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for offered in offered_courses %}
+                                <tr id="offered-row-{{ offered.id }}">
+                                    <td><strong>{{ offered.course_name }}</strong></td>
+                                    <td>{{ offered.teacher_name }}</td>
+                                    <td>{{ offered.academic_year }} {{ offered.semester }}</td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ offered.credits }}学分</span>
+                                    </td>                                    <td>{{ offered.capacity }}人</td>
+                                    <td>
+                                        <span class="badge badge-{% if offered.selected >= offered.capacity %}danger{% elif offered.selected >= (offered.capacity * 0.8)|round %}warning{% else %}success{% endif %}">
+                                            {{ offered.selected if offered.selected else 0 }}人
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success">
+                                            开放选课
+                                        </span>
+                                    </td>                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" onclick="viewStudents({{ offered.id }})" title="查看选课学生">
+                                                <i class="fas fa-users"></i> 学生
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="editOfferedCourse({{ offered.id }})" title="编辑开设课程">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteOfferedCourse({{ offered.id }})" title="删除开设课程">
+                                                <i class="fas fa-trash"></i> 删除
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">暂无开设课程</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 课程库 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-list"></i> 课程库 ({{ courses|length }}门)</h5>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="input-group input-group-sm" style="width: 300px; display: inline-flex;">
+                                <input type="text" class="form-control" placeholder="搜索课程..." id="searchInput">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="coursesTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>课程代码</th>
+                                    <th>课程名称</th>
+                                    <th>学分</th>
+                                    <th>课程性质</th>
+                                    <th>先修课程</th>
+                                    <th>课程描述</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses %}
+                                <tr id="course-row-{{ course.course_id }}">
+                                    <td><strong>{{ course.course_id }}</strong></td>
+                                    <td>{{ course.course_name }}</td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ course.credits }}学分</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if course.course_type == '必修' %}danger{% elif course.course_type == '选修' %}success{% else %}info{% endif %}">
+                                            {{ course.course_type if course.course_type else '未设置' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ course.prerequisites if course.prerequisites else '无' }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ course.description[:50] + '...' if course.description and course.description|length > 50 else (course.description if course.description else '暂无描述') }}
+                                        </small>
+                                    </td>                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-success" onclick="openCourse('{{ course.course_id }}')" title="开设此课程">
+                                                <i class="fas fa-play"></i> 开设
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="editCourse('{{ course.course_id }}')" title="编辑课程信息">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteCourse('{{ course.course_id }}')" title="删除课程">
+                                                <i class="fas fa-trash"></i> 删除
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无课程</h5>
+                        <p class="text-muted">点击上方"添加课程"按钮添加第一门课程</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加课程模态框 -->
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加课程</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addCourseForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="courseId">课程代码 *</label>
+                                <input type="text" class="form-control" id="courseId" name="course_id" required placeholder="如：CS101">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="courseName">课程名称 *</label>
+                                <input type="text" class="form-control" id="courseName" name="course_name" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="courseCredits">学分 *</label>
+                                <input type="number" class="form-control" id="courseCredits" name="credits" required min="0.5" max="10" step="0.5">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="courseType">课程性质</label>
+                                <select class="form-control" id="courseType" name="course_type">
+                                    <option value="">请选择</option>
+                                    <option value="必修">必修</option>
+                                    <option value="选修">选修</option>
+                                    <option value="实践">实践</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prerequisites">先修课程</label>
+                        <input type="text" class="form-control" id="prerequisites" name="prerequisites" placeholder="如：高等数学、程序设计基础">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescription">课程描述</label>
+                        <textarea class="form-control" id="courseDescription" name="description" rows="3" placeholder="课程介绍、教学目标等"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加课程</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 开设课程模态框 -->
+<div class="modal fade" id="addOfferedCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">开设课程</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addOfferedCourseForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="offeredCourseId">选择课程 *</label>
+                        <select class="form-control" id="offeredCourseId" name="course_id" required>
+                            <option value="">请选择课程</option>
+                            {% for course in courses %}
+                            <option value="{{ course.course_id }}">{{ course.course_id }} - {{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="offeredTeacherId">任课教师 *</label>
+                        <select class="form-control" id="offeredTeacherId" name="teacher_id" required>
+                            <option value="">请选择教师</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.teacher_id }}">{{ teacher.teacher_id }} - {{ teacher.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="academicYear">学年 *</label>
+                                <select class="form-control" id="academicYear" name="academic_year" required>
+                                    <option value="">请选择</option>
+                                    <option value="2023-2024">2023-2024</option>
+                                    <option value="2024-2025" selected>2024-2025</option>
+                                    <option value="2025-2026">2025-2026</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="semester">学期 *</label>
+                                <select class="form-control" id="semester" name="semester" required>
+                                    <option value="">请选择</option>
+                                    <option value="春季学期">春季学期</option>
+                                    <option value="秋季学期">秋季学期</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">课程容量 *</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" required min="1" max="500" value="30">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success">开设课程</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 添加课程
+document.getElementById('addCourseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/add_course', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showMessage('课程添加成功', 'success');
+            $('#addCourseModal').modal('hide');
+            location.reload();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('操作失败，请重试', 'danger');
+    });
+});
+
+// 开设课程
+document.getElementById('addOfferedCourseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/add_offered_course', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showMessage('课程开设成功', 'success');
+            $('#addOfferedCourseModal').modal('hide');
+            location.reload();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('操作失败，请重试', 'danger');
+    });
+});
+
+// 开设课程（从课程库）
+function openCourse(courseId) {
+    document.getElementById('offeredCourseId').value = courseId;
+    $('#addOfferedCourseModal').modal('show');
+}
+
+// 查看选课学生
+function viewStudents(offeredCourseId) {
+    window.location.href = `/admin/course_students/${offeredCourseId}`;
+}
+
+// 编辑课程
+function editCourse(courseId) {
+    showMessage('编辑功能开发中...', 'info');
+}
+
+// 编辑开设课程
+function editOfferedCourse(offeredCourseId) {
+    showMessage('编辑功能开发中...', 'info');
+}
+
+// 删除课程
+function deleteCourse(courseId) {
+    if (confirm('确定要删除这门课程吗？此操作不可撤销！')) {
+        const formData = new FormData();
+        formData.append('course_id', courseId);
+        
+        fetch('/admin/delete_course', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('课程删除成功', 'success');
+                document.getElementById(`course-row-${courseId}`).remove();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('删除失败，请重试', 'danger');
+        });
+    }
+}
+
+// 删除开设课程
+function deleteOfferedCourse(offeredCourseId) {
+    if (confirm('确定要删除这门开设课程吗？此操作不可撤销！')) {
+        const formData = new FormData();
+        formData.append('offered_course_id', offeredCourseId);
+        
+        fetch('/admin/delete_offered_course', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('开设课程删除成功', 'success');
+                document.getElementById(`offered-row-${offeredCourseId}`).remove();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('删除失败，请重试', 'danger');
+        });
+    }
+}
+
+// 搜索功能
+document.getElementById('searchInput').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#coursesTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(query)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// 显示消息
+function showMessage(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+
+<style>
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-header {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+{% endblock %}

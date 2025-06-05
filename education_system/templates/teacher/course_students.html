@@ -26,33 +26,31 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    {% if students %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    {% if students %}                    <div class="table-responsive">
+                        <table class="table table-hover text-center">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>学号</th>
-                                    <th>姓名</th>
-                                    <th>性别</th>
-                                    <th>选课时间</th>
-                                    <th>平时成绩</th>
-                                    <th>期末成绩</th>
-                                    <th>总评成绩</th>
-                                    <th>绩点</th>
-                                    <th>操作</th>
+                                    <th class="text-center">学号</th>
+                                    <th class="text-center">姓名</th>
+                                    <th class="text-center">性别</th>
+                                    <th class="text-center">选课时间</th>
+                                    <th class="text-center">平时成绩</th>
+                                    <th class="text-center">期末成绩</th>
+                                    <th class="text-center">总评成绩</th>
+                                    <th class="text-center">绩点</th>
+                                    <th class="text-center">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for student in students %}
                                 <tr id="student-row-{{ student.id }}">
                                     <td><strong>{{ student.id }}</strong></td>
-                                    <td>{{ student.name }}</td>
-                                    <td>
+                                    <td>{{ student.name }}</td>                                    <td>
                                         <span class="badge badge-{% if student.gender == 'M' %}primary{% else %}pink{% endif %}">
                                             {{ '男' if student.gender == 'M' else '女' }}
                                         </span>
                                     </td>
-                                    <td>{{ student.selection_time.strftime('%Y-%m-%d') if student.selection_time else '未知' }}</td>
+                                    <td>{{ student.selection_time if student.selection_time else '未知' }}</td>
                                     <td>
                                         <input type="number" class="form-control form-control-sm grade-input" 
                                                id="regular-{{ student.id }}" 

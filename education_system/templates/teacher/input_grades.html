@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>录入成绩</h2>
+                <a href="{{ url_for('teacher_grade_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回成绩管理
+                </a>
+            </div>
+            
+            <!-- 课程信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4><i class="fas fa-info-circle"></i> 课程信息</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>课程代码：</strong>{{ course.code }}</p>
+                            <p><strong>课程名称：</strong>{{ course.name }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>学年学期：</strong>{{ course.academic_year }} {{ course.semester }}</p>
+                            <p><strong>学生总数：</strong>{{ students|length }} 人</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>成绩说明：</strong><br>
+                                    总评成绩 = 平时成绩 × 30% + 考试成绩 × 70%<br>
+                                    系统将自动计算总评成绩和绩点
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 成绩录入表单 -->
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-edit"></i> 成绩录入</h4>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <form method="POST" action="{{ url_for('teacher_input_grades', course_id=course.id) }}">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>学号</th>
+                                        <th>姓名</th>
+                                        <th>专业</th>
+                                        <th>班级</th>
+                                        <th>平时成绩<br><small class="text-muted">(0-100)</small></th>
+                                        <th>考试成绩<br><small class="text-muted">(0-100)</small></th>
+                                        <th>当前总评</th>
+                                        <th>当前绩点</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in students %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ student.id }}</strong>
+                                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                                        </td>
+                                        <td>{{ student.name }}</td>
+                                        <td>{{ student.major }}</td>
+                                        <td>{{ student.class_name }}</td>
+                                        <td>
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   name="regular_grade" 
+                                                   value="{{ student.regular_grade }}" 
+                                                   min="0" 
+                                                   max="100" 
+                                                   step="0.1"
+                                                   placeholder="平时成绩">
+                                        </td>
+                                        <td>
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   name="exam_grade" 
+                                                   value="{{ student.exam_grade }}" 
+                                                   min="0" 
+                                                   max="100" 
+                                                   step="0.1"
+                                                   placeholder="考试成绩">
+                                        </td>
+                                        <td>
+                                            {% if student.final_grade %}
+                                                <span class="badge badge-{% if student.final_grade >= 60 %}success{% else %}danger{% endif %}">
+                                                    {{ student.final_grade }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if student.gpa %}
+                                                <span class="badge badge-primary">{{ student.gpa }}</span>
+                                            {% else %}
+                                                <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if student.status == '已录入' %}success{% elif student.status == '已审核' %}primary{% else %}secondary{% endif %}">
+                                                {{ student.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> 保存成绩
+                            </button>
+                            <a href="{{ url_for('teacher_grade_management') }}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-times"></i> 取消
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">该课程暂无学生选课</p>
+                        <a href="{{ url_for('teacher_grade_management') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回成绩管理
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 自动计算总评成绩和绩点
+document.addEventListener('DOMContentLoaded', function() {
+    const regularInputs = document.querySelectorAll('input[name="regular_grade"]');
+    const examInputs = document.querySelectorAll('input[name="exam_grade"]');
+    
+    function calculateGrades() {
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach((row, index) => {
+            const regularInput = row.querySelector('input[name="regular_grade"]');
+            const examInput = row.querySelector('input[name="exam_grade"]');
+            const finalSpan = row.querySelector('td:nth-child(7) span');
+            const gpaSpan = row.querySelector('td:nth-child(8) span');
+            
+            const regular = parseFloat(regularInput.value) || 0;
+            const exam = parseFloat(examInput.value) || 0;
+            
+            if (regular > 0 && exam > 0) {
+                const finalGrade = Math.round(regular * 0.3 + exam * 0.7);
+                let gpa = 0;
+                
+                if (finalGrade >= 90) gpa = 4.0;
+                else if (finalGrade >= 80) gpa = 3.0;
+                else if (finalGrade >= 70) gpa = 2.0;
+                else if (finalGrade >= 60) gpa = 1.0;
+                else gpa = 0.0;
+                
+                finalSpan.textContent = finalGrade;
+                finalSpan.className = finalGrade >= 60 ? 'badge badge-success' : 'badge badge-danger';
+                
+                gpaSpan.textContent = gpa.toFixed(1);
+                gpaSpan.className = 'badge badge-primary';
+            } else {
+                finalSpan.textContent = '--';
+                finalSpan.className = 'text-muted';
+                gpaSpan.textContent = '--';
+                gpaSpan.className = 'text-muted';
+            }
+        });
+    }
+    
+    // 添加事件监听器
+    [...regularInputs, ...examInputs].forEach(input => {
+        input.addEventListener('input', calculateGrades);
+    });
+});
+</script>
+{% endblock %}

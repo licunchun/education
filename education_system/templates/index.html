@@ -4,9 +4,7 @@
 <div class="welcome-section">
     <h2>欢迎使用学籍管理系统</h2>
     <p>本系统提供学生信息管理、课程管理、成绩管理等功能，方便学校进行教务管理。</p>
-    
-    <div class="portal-links">
-        <div class="portal">
+      <div class="portal-links">        <div class="portal">
             <h3>学生入口</h3>
             <p>查看个人信息、选课、查询成绩、缴纳学费</p>
             <a href="{{ url_for('student_login') }}" class="btn">登录</a>
@@ -22,6 +20,30 @@
             <h3>管理员入口</h3>
             <p>系统管理、信息维护、数据统计</p>
             <a href="{{ url_for('admin_login') }}" class="btn">登录</a>
+        </div>
+    </div>
+      <div class="additional-links">
+        <h3>注册申请</h3>
+        <div class="service-links">
+            <a href="{{ url_for('student_register') }}" class="service-link">
+                <i class="icon">🎓</i>
+                <span>学生注册申请</span>
+                <small>提交学生入学申请，等待管理员审批</small>
+            </a>
+            <a href="{{ url_for('teacher_register') }}" class="service-link">
+                <i class="icon">👨‍🏫</i>
+                <span>教师注册申请</span>
+                <small>提交教师入职申请，等待管理员审批</small>
+            </a>
+        </div>
+        
+        <h3>其他服务</h3>
+        <div class="service-links">
+            <a href="{{ url_for('application_status') }}" class="service-link">
+                <i class="icon">🔍</i>
+                <span>申请状态查询</span>
+                <small>查询注册申请审核进度</small>
+            </a>
         </div>
     </div>
 </div>

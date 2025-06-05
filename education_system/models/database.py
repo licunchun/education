@@ -1,8 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
-# 初始化SQLAlchemy
-db = SQLAlchemy()
+# 从主应用导入db实例
+from education_system import db
 
 # 用户角色表
 class Role(db.Model):
@@ -77,7 +77,7 @@ class Class(db.Model):
     name = db.Column(db.String(50), nullable=False)
     major_id = db.Column(db.Integer, db.ForeignKey('majors.id'))
     grade_year = db.Column(db.Integer)  # 年级
-    advisor_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
+    advisor_id = db.Column(db.String(20), db.ForeignKey('teachers.id'))
     
     # 关联关系
     major = db.relationship('Major', backref='classes')
@@ -207,3 +207,65 @@ class Payment(db.Model):
     
     def __repr__(self):
         return f'<Payment {self.tuition_id} {self.amount}>'
+
+# 注册申请表
+class RegistrationApplication(db.Model):
+    __tablename__ = 'registration_applications'
+    id = db.Column(db.Integer, primary_key=True)
+    application_type = db.Column(db.String(20), nullable=False)  # 'student' or 'teacher'
+    
+    # 通用字段
+    name = db.Column(db.String(50), nullable=False)
+    gender = db.Column(db.String(1))
+    id_number = db.Column(db.String(18), nullable=False)
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    
+    # 学生专用字段
+    birth_date = db.Column(db.Date)
+    hometown = db.Column(db.String(100))
+    major_id = db.Column(db.Integer, db.ForeignKey('majors.id'))
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'))
+    guardian_name = db.Column(db.String(50))
+    guardian_phone = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    
+    # 教师专用字段
+    major_field = db.Column(db.String(100))
+    title = db.Column(db.String(50))
+    department = db.Column(db.String(100))
+    work_experience = db.Column(db.Text)
+    specialties = db.Column(db.Text)
+    
+    # 通用字段
+    special_notes = db.Column(db.Text)
+    status = db.Column(db.String(20), default='待审核')  # 待审核/已通过/已拒绝
+    application_time = db.Column(db.DateTime, default=datetime.now)
+    review_time = db.Column(db.DateTime)
+    reviewer_id = db.Column(db.String(50), db.ForeignKey('users.username'))
+    review_comments = db.Column(db.Text)
+    
+    # 关联关系
+    major = db.relationship('Major', backref='applications')
+    class_obj = db.relationship('Class', backref='applications')
+    reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='reviewed_applications')
+    
+    def __repr__(self):
+        return f'<RegistrationApplication {self.id} {self.name} {self.application_type}>'
+
+# 申请审核记录表
+class ApplicationReview(db.Model):
+    __tablename__ = 'application_reviews'
+    id = db.Column(db.Integer, primary_key=True)
+    application_id = db.Column(db.Integer, db.ForeignKey('registration_applications.id'), nullable=False)
+    reviewer_id = db.Column(db.String(50), db.ForeignKey('users.username'), nullable=False)
+    review_action = db.Column(db.String(20), nullable=False)  # 'approve', 'reject', 'request_info'
+    review_comments = db.Column(db.Text)
+    review_time = db.Column(db.DateTime, default=datetime.now)
+    
+    # 关联关系
+    application = db.relationship('RegistrationApplication', backref='reviews')
+    reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='review_records')
+    
+    def __repr__(self):
+        return f'<ApplicationReview {self.application_id} {self.review_action}>'

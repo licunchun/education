@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> 学生管理</h2>
+                <div>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addStudentModal">
+                        <i class="fas fa-plus"></i> 添加学生
+                    </button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回控制面板
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-list"></i> 学生列表 ({{ students|length }}人)</h5>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="input-group input-group-sm" style="width: 300px; display: inline-flex;">
+                                <input type="text" class="form-control" placeholder="搜索学号、姓名..." id="searchInput">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="studentsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>学号</th>
+                                    <th>姓名</th>
+                                    <th>性别</th>
+                                    <th>专业</th>
+                                    <th>班级</th>
+                                    <th>入学年份</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr id="student-row-{{ student.student_id }}">
+                                    <td><strong>{{ student.student_id }}</strong></td>
+                                    <td>{{ student.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if student.gender == 'M' %}primary{% else %}pink{% endif %}">
+                                            {{ '男' if student.gender == 'M' else '女' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ student.major if student.major else '未设置' }}</td>
+                                    <td>{{ student.class_name if student.class_name else '未设置' }}</td>                                    <td>{{ student.admission_year if student.admission_year else '未设置' }}</td>
+                                    <td>
+                                        <select class="form-control form-control-sm" onchange="updateStudentStatus('{{ student.student_id }}', this.value)">
+                                            <option value="在读" {% if student.status == '在读' %}selected{% endif %}>在读</option>
+                                            <option value="休学" {% if student.status == '休学' %}selected{% endif %}>休学</option>
+                                            <option value="退学" {% if student.status == '退学' %}selected{% endif %}>退学</option>
+                                            <option value="毕业" {% if student.status == '毕业' %}selected{% endif %}>毕业</option>
+                                            <option value="其他" {% if student.status == '其他' %}selected{% endif %}>其他</option>
+                                        </select>
+                                    </td><td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="editStudent('{{ student.student_id }}')" title="编辑学生信息">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-outline-info" onclick="viewStudent('{{ student.student_id }}')" title="查看学生详细信息">
+                                                <i class="fas fa-eye"></i> 详情
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteStudent('{{ student.student_id }}')" title="删除学生">
+                                                <i class="fas fa-trash"></i> 删除
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无学生数据</h5>
+                        <p class="text-muted">点击上方"添加学生"按钮添加第一个学生</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加学生模态框 -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加学生</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addStudentForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="studentId">学号 *</label>
+                        <input type="text" class="form-control" id="studentId" name="student_id" required placeholder="如：S20230001">
+                    </div>
+                    <div class="form-group">
+                        <label for="studentName">姓名 *</label>
+                        <input type="text" class="form-control" id="studentName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentGender">性别 *</label>
+                        <select class="form-control" id="studentGender" name="gender" required>
+                            <option value="">请选择</option>
+                            <option value="M">男</option>
+                            <option value="F">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentMajor">专业</label>
+                        <select class="form-control" id="studentMajor" name="major">
+                            <option value="">请选择</option>
+                            {% for major in majors %}
+                            <option value="{{ major.major_id }}">{{ major.major_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentClass">班级</label>
+                        <select class="form-control" id="studentClass" name="class_id">
+                            <option value="">请选择</option>
+                            {% for class in classes %}
+                            <option value="{{ class.class_id }}">{{ class.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="admissionYear">入学年份</label>
+                        <input type="number" class="form-control" id="admissionYear" name="admission_year" min="2000" max="2030" value="2023">
+                    </div>
+                    <div class="form-group">
+                        <label for="studentPassword">密码 *</label>
+                        <input type="password" class="form-control" id="studentPassword" name="password" required placeholder="默认密码或自定义">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加学生</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑学生模态框 -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑学生信息</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="editStudentForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editStudentId" name="student_id">
+                    <div class="form-group">
+                        <label for="editStudentName">姓名 *</label>
+                        <input type="text" class="form-control" id="editStudentName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudentGender">性别 *</label>
+                        <select class="form-control" id="editStudentGender" name="gender" required>
+                            <option value="M">男</option>
+                            <option value="F">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudentMajor">专业</label>
+                        <select class="form-control" id="editStudentMajor" name="major">
+                            <option value="">请选择</option>
+                            {% for major in majors %}
+                            <option value="{{ major.major_id }}">{{ major.major_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudentClass">班级</label>
+                        <select class="form-control" id="editStudentClass" name="class_id">
+                            <option value="">请选择</option>
+                            {% for class in classes %}
+                            <option value="{{ class.class_id }}">{{ class.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAdmissionYear">入学年份</label>
+                        <input type="number" class="form-control" id="editAdmissionYear" name="admission_year" min="2000" max="2030">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 添加学生
+document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/add_student', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showMessage('学生添加成功', 'success');
+            $('#addStudentModal').modal('hide');
+            location.reload();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('操作失败，请重试', 'danger');
+    });
+});
+
+// 编辑学生
+function editStudent(studentId) {
+    // 这里可以通过AJAX获取学生详细信息并填充表单
+    $('#editStudentModal').modal('show');
+}
+
+// 查看学生详情
+function viewStudent(studentId) {
+    showMessage('查看功能开发中...', 'info');
+}
+
+// 删除学生
+function deleteStudent(studentId) {
+    if (confirm('确定要删除这个学生吗？此操作不可撤销！')) {
+        const formData = new FormData();
+        formData.append('student_id', studentId);
+        
+        fetch('/admin/delete_student', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('学生删除成功', 'success');
+                document.getElementById(`student-row-${studentId}`).remove();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('删除失败，请重试', 'danger');
+        });
+    }
+}
+
+// 搜索功能
+document.getElementById('searchInput').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#studentsTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(query)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// 更新学生状态
+function updateStudentStatus(studentId, newStatus) {
+    if (confirm(`确定要将学生状态更改为"${newStatus}"吗？`)) {
+        fetch('/admin/update_student_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `student_id=${studentId}&status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('学生状态更新成功', 'success');
+            } else {
+                showMessage(data.message || '状态更新失败', 'danger');
+                // 恢复原状态
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('更新失败，请重试', 'danger');
+            location.reload();
+        });
+    } else {
+        // 取消更改，恢复原值
+        location.reload();
+    }
+}
+
+// 显示消息
+function showMessage(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+
+<style>
+.badge-pink {
+    background-color: #e91e63;
+    color: white;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-header {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+{% endblock %}

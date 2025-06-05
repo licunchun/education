@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册申请提交成功 - 学籍管理系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #333;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .info-value {
+            color: #666;
+        }
+        
+        .next-steps {
+            background: #e3f2fd;
+            border: 2px solid #bbdefb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .next-steps h3 {
+            color: #1565c0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .next-steps ol {
+            color: #1565c0;
+            padding-left: 20px;
+        }
+        
+        .next-steps li {
+            margin-bottom: 8px;
+        }
+        
+        .button-group {
+            margin-top: 30px;
+            gap: 15px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1 class="title">注册申请提交成功！</h1>
+        <p class="subtitle">您的{{ '学生' if application_type == 'student' else '教师' }}注册申请已成功提交</p>
+        
+        <div class="info-box">
+            <h3>申请信息</h3>
+            <div class="info-item">
+                <span class="info-label">申请编号：</span>
+                <span class="info-value">{{ application_id }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">申请人：</span>
+                <span class="info-value">{{ applicant_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">申请类型：</span>
+                <span class="info-value">{{ '学生注册' if application_type == 'student' else '教师注册' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">提交时间：</span>
+                <span class="info-value">{{ submit_time }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">当前状态：</span>
+                <span class="info-value" style="color: #f39c12; font-weight: bold;">待审核</span>
+            </div>
+        </div>
+        
+        <div class="next-steps">
+            <h3>后续流程</h3>
+            <ol>
+                <li><strong>审核阶段：</strong>管理员将在2-3个工作日内审核您的申请</li>
+                <li><strong>审核通知：</strong>审核结果将通过您留下的联系方式通知</li>
+                <li><strong>账户创建：</strong>审核通过后系统将自动创建您的账户</li>
+                {% if application_type == 'student' %}
+                <li><strong>获取学号：</strong>系统将自动分配学号</li>
+                <li><strong>初始密码：</strong>默认密码为 123456，请登录后及时修改</li>
+                {% else %}
+                <li><strong>获取工号：</strong>系统将自动分配工号</li>
+                <li><strong>初始密码：</strong>默认密码为 123456，请登录后及时修改</li>
+                {% endif %}
+            </ol>
+        </div>
+        
+        <div class="button-group">
+            <a href="{{ url_for('application_status') }}" class="btn btn-primary">查询申请状态</a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline">返回首页</a>
+            {% if application_type == 'student' %}
+            <a href="{{ url_for('teacher_register') }}" class="btn btn-secondary">教师注册</a>
+            {% else %}
+            <a href="{{ url_for('student_register') }}" class="btn btn-secondary">学生注册</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,189 +1,280 @@
-import sqlite3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+MySQL数据库初始化模块
+负责创建数据库表结构并插入基础测试数据
+"""
 import hashlib
 from datetime import datetime, date
-from education_system import app, get_db
+from education_system import app, db
+from education_system.models.database import (
+    Role, User, Major, Class, Student, Teacher, Course, 
+    OfferedCourse, CourseSelection, Grade, Tuition, Payment,
+    RegistrationApplication, ApplicationReview
+)
 
 def hash_password(password):
     """简单的密码哈希函数"""
     return hashlib.md5(password.encode()).hexdigest()
 
 def init_db():
-    """初始化数据库并添加测试数据"""    # 首先初始化数据库结构
+    """初始化MySQL数据库并添加测试数据"""
+    print("🔧 开始初始化MySQL数据库...")
+    
     with app.app_context():
-        db = get_db()
-        import os
-        schema_path = os.path.join(app.root_path, 'schema.sql')
-        with open(schema_path, 'r', encoding='utf-8') as f:
-            db.executescript(f.read())
+        # 删除所有表然后重新创建
+        db.drop_all()
+        db.create_all()
+        print("📋 MySQL数据库表结构创建成功")
         
         # 添加角色
-        db.execute('INSERT INTO roles (name, description) VALUES (?, ?)', ('admin', '系统管理员'))
-        db.execute('INSERT INTO roles (name, description) VALUES (?, ?)', ('teacher', '教师'))
-        db.execute('INSERT INTO roles (name, description) VALUES (?, ?)', ('student', '学生'))
+        admin_role = Role(name='admin', description='系统管理员')
+        teacher_role = Role(name='teacher', description='教师')
+        student_role = Role(name='student', description='学生')
+        
+        db.session.add_all([admin_role, teacher_role, student_role])
+        db.session.commit()
         
         # 添加管理员用户
-        db.execute(
-            'INSERT INTO users (username, password, real_name, role_id, contact) VALUES (?, ?, ?, ?, ?)',
-            ('admin001', hash_password('admin123'), '张管理', 1, 'admin@school.edu.cn')
+        admin_user = User(
+            username='admin001',
+            password=hash_password('admin123'),
+            real_name='张管理',
+            role_id=admin_role.id,
+            contact='admin@school.edu.cn'
         )
+        db.session.add(admin_user)
+        db.session.commit()
         
         # 添加专业
-        db.execute(
-            'INSERT INTO majors (code, name, college, duration) VALUES (?, ?, ?, ?)',
-            ('CS001', '计算机科学与技术', '计算机学院', 4)
-        )
-        db.execute(
-            'INSERT INTO majors (code, name, college, duration) VALUES (?, ?, ?, ?)',
-            ('SE001', '软件工程', '计算机学院', 4)
-        )
-        db.execute(
-            'INSERT INTO majors (code, name, college, duration) VALUES (?, ?, ?, ?)',
-            ('MA001', '数学', '理学院', 4)
-        )
+        cs_major = Major(code='CS001', name='计算机科学与技术', college='计算机学院', duration=4)
+        se_major = Major(code='SE001', name='软件工程', college='计算机学院', duration=4)
+        ma_major = Major(code='MA001', name='数学', college='理学院', duration=4)
+        
+        db.session.add_all([cs_major, se_major, ma_major])
+        db.session.commit()
         
         # 添加教师用户和教师信息
-        db.execute(
-            'INSERT INTO users (username, password, real_name, role_id, contact) VALUES (?, ?, ?, ?, ?)',
-            ('t001', hash_password('teacher123'), '李教授', 2, 'teacher1@school.edu.cn')
-        )
-        teacher1_user_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
-        
-        db.execute(
-            'INSERT INTO teachers (id, name, gender, college, title, contact, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ('T20250001', '李教授', 'M', '计算机学院', '教授', 'teacher1@school.edu.cn', teacher1_user_id)
+        teacher1_user = User(
+            username='t001',
+            password=hash_password('teacher123'),
+            real_name='李教授',
+            role_id=teacher_role.id,
+            contact='t001@school.edu.cn'
         )
         
-        db.execute(
-            'INSERT INTO users (username, password, real_name, role_id, contact) VALUES (?, ?, ?, ?, ?)',
-            ('t002', hash_password('teacher123'), '王副教授', 2, 'teacher2@school.edu.cn')
+        teacher2_user = User(
+            username='t002',
+            password=hash_password('teacher123'),
+            real_name='王副教授',
+            role_id=teacher_role.id,
+            contact='t002@school.edu.cn'
         )
-        teacher2_user_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
         
-        db.execute(
-            'INSERT INTO teachers (id, name, gender, college, title, contact, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ('T20250002', '王副教授', 'F', '计算机学院', '副教授', 'teacher2@school.edu.cn', teacher2_user_id)
+        db.session.add_all([teacher1_user, teacher2_user])
+        db.session.commit()
+        
+        teacher1 = Teacher(
+            id='T20250001',
+            name='李教授',
+            gender='M',
+            college='计算机学院',
+            title='教授',
+            contact='t001@school.edu.cn',
+            user_id=teacher1_user.id
         )
+        
+        teacher2 = Teacher(
+            id='T20250002',
+            name='王副教授',
+            gender='F',
+            college='计算机学院',
+            title='副教授',
+            contact='t002@school.edu.cn',
+            user_id=teacher2_user.id
+        )
+        
+        db.session.add_all([teacher1, teacher2])
+        db.session.commit()
         
         # 添加班级
-        db.execute(
-            'INSERT INTO classes (name, major_id, grade_year, advisor_id) VALUES (?, ?, ?, ?)',
-            ('计科2023级1班', 1, 2023, 'T20250001')
-        )
-        db.execute(
-            'INSERT INTO classes (name, major_id, grade_year, advisor_id) VALUES (?, ?, ?, ?)',
-            ('软工2023级1班', 2, 2023, 'T20250002')
-        )
+        class1 = Class(name='计科2023级1班', major_id=cs_major.id, grade_year=2023, advisor_id=teacher1.id)
+        class2 = Class(name='软工2023级1班', major_id=se_major.id, grade_year=2023, advisor_id=teacher2.id)
+        
+        db.session.add_all([class1, class2])
+        db.session.commit()
         
         # 添加学生用户和学生信息
-        db.execute(
-            'INSERT INTO users (username, password, real_name, role_id, contact) VALUES (?, ?, ?, ?, ?)',
-            ('s001', hash_password('student123'), '张三', 3, 'student1@school.edu.cn')
-        )
-        student1_user_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
-        
-        db.execute(
-            'INSERT INTO students (id, name, gender, birth_date, id_card, hometown, enrollment_date, major_id, class_id, phone, email, address, status, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            ('S20230001', '张三', 'M', '2005-01-15', '110101200501150011', '北京市', '2023-09-01', 1, 1, '13800138001', 'student1@school.edu.cn', '北京市海淀区', '在读', student1_user_id)
+        student1_user = User(
+            username='s001',
+            password=hash_password('student123'),
+            real_name='张三',
+            role_id=student_role.id,
+            contact='s001@school.edu.cn'
         )
         
-        db.execute(
-            'INSERT INTO users (username, password, real_name, role_id, contact) VALUES (?, ?, ?, ?, ?)',
-            ('s002', hash_password('student123'), '李四', 3, 'student2@school.edu.cn')
+        student2_user = User(
+            username='s002',
+            password=hash_password('student123'),
+            real_name='李四',
+            role_id=student_role.id,
+            contact='s002@school.edu.cn'
         )
-        student2_user_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
         
-        db.execute(
-            'INSERT INTO students (id, name, gender, birth_date, id_card, hometown, enrollment_date, major_id, class_id, phone, email, address, status, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            ('S20230002', '李四', 'F', '2005-05-20', '110101200505200022', '上海市', '2023-09-01', 2, 2, '13900139002', 'student2@school.edu.cn', '上海市静安区', '在读', student2_user_id)
+        db.session.add_all([student1_user, student2_user])
+        db.session.commit()
+        
+        student1 = Student(
+            id='S20230001',
+            name='张三',
+            gender='M',
+            birth_date=date(2005, 1, 15),
+            id_card='110101200501150011',
+            hometown='北京市',
+            enrollment_date=date(2023, 9, 1),
+            major_id=cs_major.id,
+            class_id=class1.id,
+            phone='13812345678',
+            email='s001@school.edu.cn',
+            address='北京市某区某街道',
+            status='在读',
+            user_id=student1_user.id
         )
+        
+        student2 = Student(
+            id='S20230002',
+            name='李四',
+            gender='F',
+            birth_date=date(2005, 5, 20),
+            id_card='110101200505200022',
+            hometown='上海市',
+            enrollment_date=date(2023, 9, 1),
+            major_id=se_major.id,
+            class_id=class2.id,
+            phone='13887654321',
+            email='s002@school.edu.cn',
+            address='上海市某区某街道',
+            status='在读',
+            user_id=student2_user.id
+        )
+        
+        db.session.add_all([student1, student2])
+        db.session.commit()
         
         # 添加课程
-        db.execute(
-            'INSERT INTO courses (code, name, course_type, credits, hours, college, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ('CS101', '计算机导论', '必修', 3.0, 48, '计算机学院', '计算机科学基础课程，介绍计算机的基本概念和原理。')
+        course1 = Course(
+            code='CS101',
+            name='计算机基础',
+            course_type='必修',
+            credits=3.0,
+            hours=48,
+            college='计算机学院',
+            description='计算机科学基础课程'
         )
         
-        db.execute(
-            'INSERT INTO courses (code, name, course_type, credits, hours, college, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ('CS102', '程序设计基础', '必修', 4.0, 64, '计算机学院', '介绍基本的程序设计方法和技巧，使用C++语言。')
+        course2 = Course(
+            code='CS102',
+            name='程序设计',
+            course_type='必修',
+            credits=4.0,
+            hours=64,
+            college='计算机学院',
+            description='程序设计基础'
         )
         
-        db.execute(
-            'INSERT INTO courses (code, name, course_type, credits, hours, college, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ('MA101', '高等数学', '必修', 5.0, 80, '理学院', '微积分和线性代数的基础知识。')
+        course3 = Course(
+            code='MA101',
+            name='高等数学',
+            course_type='必修',
+            credits=5.0,
+            hours=80,
+            college='理学院',
+            description='数学基础课程'
         )
+        
+        db.session.add_all([course1, course2, course3])
+        db.session.commit()
         
         # 添加开课信息
-        db.execute(
-            'INSERT INTO offered_courses (course_id, academic_year, semester, teacher_id, schedule, location, capacity, selected_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (1, '2024-2025', '第一学期', 'T20250001', '周一 1-2节', '教学楼A-101', 60, 2)
+        offered1 = OfferedCourse(
+            course_id=course1.id,
+            academic_year='2023-2024',
+            semester='秋季学期',
+            teacher_id=teacher1.id,
+            schedule='周一1-2节',
+            location='A101',
+            capacity=50,
+            selected_count=2
         )
         
-        db.execute(
-            'INSERT INTO offered_courses (course_id, academic_year, semester, teacher_id, schedule, location, capacity, selected_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (2, '2024-2025', '第一学期', 'T20250002', '周三 3-4节', '教学楼B-202', 50, 2)
+        offered2 = OfferedCourse(
+            course_id=course2.id,
+            academic_year='2023-2024',
+            semester='秋季学期',
+            teacher_id=teacher2.id,
+            schedule='周三3-4节',
+            location='B201',
+            capacity=40,
+            selected_count=2
         )
         
-        db.execute(
-            'INSERT INTO offered_courses (course_id, academic_year, semester, teacher_id, schedule, location, capacity, selected_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (3, '2024-2025', '第一学期', 'T20250001', '周五 5-6节', '教学楼C-303', 70, 2)
-        )
+        db.session.add_all([offered1, offered2])
+        db.session.commit()
         
         # 添加选课记录
-        db.execute(
-            'INSERT INTO course_selections (student_id, offered_course_id, selection_time, status) VALUES (?, ?, ?, ?)',
-            ('S20230001', 1, '2024-06-01 10:00:00', '已选')
+        selection1 = CourseSelection(
+            student_id=student1.id,
+            offered_course_id=offered1.id,
+            selection_time=datetime(2024, 6, 1, 10, 0, 0),
+            status='已选'
         )
         
-        db.execute(
-            'INSERT INTO course_selections (student_id, offered_course_id, selection_time, status) VALUES (?, ?, ?, ?)',
-            ('S20230001', 2, '2024-06-01 10:30:00', '已选')
+        selection2 = CourseSelection(
+            student_id=student1.id,
+            offered_course_id=offered2.id,
+            selection_time=datetime(2024, 6, 1, 10, 30, 0),
+            status='已选'
         )
         
-        db.execute(
-            'INSERT INTO course_selections (student_id, offered_course_id, selection_time, status) VALUES (?, ?, ?, ?)',
-            ('S20230002', 1, '2024-06-02 14:00:00', '已选')
+        selection3 = CourseSelection(
+            student_id=student2.id,
+            offered_course_id=offered1.id,
+            selection_time=datetime(2024, 6, 2, 14, 0, 0),
+            status='已选'
         )
         
-        db.execute(
-            'INSERT INTO course_selections (student_id, offered_course_id, selection_time, status) VALUES (?, ?, ?, ?)',
-            ('S20230002', 3, '2024-06-02 14:30:00', '已选')
-        )
+        db.session.add_all([selection1, selection2, selection3])
+        db.session.commit()
         
         # 添加成绩
-        db.execute(
-            'INSERT INTO grades (student_id, offered_course_id, regular_grade, exam_grade, final_grade, gpa, input_time, input_teacher_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            ('S20230001', 1, 85.0, 90.0, 88.0, 4.0, '2025-01-10 15:00:00', 'T20250001', '已审核')
+        grade1 = Grade(
+            student_id=student1.id,
+            offered_course_id=offered1.id,
+            regular_grade=85.0,
+            exam_grade=90.0,
+            final_grade=88.0,
+            gpa=4.0,
+            input_time=datetime(2025, 1, 10, 15, 0, 0),
+            input_teacher_id=teacher1.id,
+            status='已审核'
         )
         
-        db.execute(
-            'INSERT INTO grades (student_id, offered_course_id, regular_grade, exam_grade, final_grade, gpa, input_time, input_teacher_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            ('S20230001', 2, 80.0, 85.0, 83.0, 3.5, '2025-01-11 10:00:00', 'T20250002', '已审核')
+        grade2 = Grade(
+            student_id=student1.id,
+            offered_course_id=offered2.id,
+            regular_grade=80.0,
+            exam_grade=85.0,
+            final_grade=83.0,
+            gpa=3.5,
+            input_time=datetime(2025, 1, 11, 10, 0, 0),
+            input_teacher_id=teacher2.id,            status='已审核'
         )
         
-        # 添加学费信息
-        db.execute(
-            'INSERT INTO tuitions (student_id, academic_year, amount, paid_amount, status, deadline) VALUES (?, ?, ?, ?, ?, ?)',
-            ('S20230001', '2024-2025', 8000.0, 0.0, '未缴费', '2024-09-15')
-        )
+        db.session.add_all([grade1, grade2])
+        db.session.commit()
         
-        db.execute(
-            'INSERT INTO tuitions (student_id, academic_year, amount, paid_amount, status, deadline) VALUES (?, ?, ?, ?, ?, ?)',
-            ('S20230002', '2024-2025', 8000.0, 8000.0, '已缴费', '2024-09-15')
-        )
-        
-        # 获取第二个学生的学费ID
-        tuition2_id = db.execute('SELECT id FROM tuitions WHERE student_id = ?', ('S20230002',)).fetchone()[0]
-        
-        # 添加支付记录
-        db.execute(
-            'INSERT INTO payments (tuition_id, amount, payment_time, payment_method, transaction_id) VALUES (?, ?, ?, ?, ?)',
-            (tuition2_id, 8000.0, '2024-08-20 11:00:00', '银行转账', 'P20240820001')
-        )
-        
-        db.commit()
-        
-        print("数据库初始化完成，测试数据已添加！")
+        print("✅ 基础数据插入成功")
+        print("📊 MySQL数据库初始化完成！")
 
 if __name__ == '__main__':
     init_db()

@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chalkboard-teacher"></i> 教师管理</h2>
+                <div>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addTeacherModal">
+                        <i class="fas fa-plus"></i> 添加教师
+                    </button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回控制面板
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-list"></i> 教师列表 ({{ teachers|length }}人)</h5>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="input-group input-group-sm" style="width: 300px; display: inline-flex;">
+                                <input type="text" class="form-control" placeholder="搜索工号、姓名..." id="searchInput">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if teachers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="teachersTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>工号</th>
+                                    <th>姓名</th>
+                                    <th>性别</th>
+                                    <th>部门</th>
+                                    <th>职称</th>
+                                    <th>联系邮箱</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for teacher in teachers %}
+                                <tr id="teacher-row-{{ teacher.teacher_id }}">
+                                    <td><strong>{{ teacher.teacher_id }}</strong></td>
+                                    <td>{{ teacher.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if teacher.gender == 'M' %}primary{% else %}pink{% endif %}">
+                                            {{ '男' if teacher.gender == 'M' else '女' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ teacher.department if teacher.department else '未设置' }}</td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ teacher.title if teacher.title else '未设置' }}
+                                        </span>
+                                    </td>                                    <td>{{ teacher.email if teacher.email else '未设置' }}</td>
+                                    <td>
+                                        <select class="form-control form-control-sm" onchange="updateTeacherStatus('{{ teacher.teacher_id }}', this.value)">
+                                            <option value="在职" {% if not teacher.status or teacher.status == '在职' %}selected{% endif %}>在职</option>
+                                            <option value="离职" {% if teacher.status == '离职' %}selected{% endif %}>离职</option>
+                                            <option value="退休" {% if teacher.status == '退休' %}selected{% endif %}>退休</option>
+                                            <option value="停职" {% if teacher.status == '停职' %}selected{% endif %}>停职</option>
+                                            <option value="其他" {% if teacher.status == '其他' %}selected{% endif %}>其他</option>
+                                        </select>
+                                    </td><td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="editTeacher('{{ teacher.teacher_id }}')" title="编辑教师信息">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-outline-info" onclick="viewTeacher('{{ teacher.teacher_id }}')" title="查看教师详细信息">
+                                                <i class="fas fa-eye"></i> 详情
+                                            </button>
+                                            <button class="btn btn-outline-success" onclick="viewCourses('{{ teacher.teacher_id }}')" title="查看教师课程">
+                                                <i class="fas fa-book"></i> 课程
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteTeacher('{{ teacher.teacher_id }}')" title="删除教师">
+                                                <i class="fas fa-trash"></i> 删除
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无教师数据</h5>
+                        <p class="text-muted">点击上方"添加教师"按钮添加第一个教师</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加教师模态框 -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加教师</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addTeacherForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="teacherId">工号 *</label>
+                        <input type="text" class="form-control" id="teacherId" name="teacher_id" required placeholder="如：T20230001">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherName">姓名 *</label>
+                        <input type="text" class="form-control" id="teacherName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherGender">性别 *</label>
+                        <select class="form-control" id="teacherGender" name="gender" required>
+                            <option value="">请选择</option>
+                            <option value="M">男</option>
+                            <option value="F">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherDepartment">部门</label>
+                        <input type="text" class="form-control" id="teacherDepartment" name="department" placeholder="如：计算机学院">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherTitle">职称</label>
+                        <select class="form-control" id="teacherTitle" name="title">
+                            <option value="">请选择</option>
+                            <option value="助教">助教</option>
+                            <option value="讲师">讲师</option>
+                            <option value="副教授">副教授</option>
+                            <option value="教授">教授</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherEmail">邮箱</label>
+                        <input type="email" class="form-control" id="teacherEmail" name="email" placeholder="teacher@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherPassword">密码 *</label>
+                        <input type="password" class="form-control" id="teacherPassword" name="password" required placeholder="默认密码或自定义">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加教师</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑教师模态框 -->
+<div class="modal fade" id="editTeacherModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑教师信息</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="editTeacherForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editTeacherId" name="teacher_id">
+                    <div class="form-group">
+                        <label for="editTeacherName">姓名 *</label>
+                        <input type="text" class="form-control" id="editTeacherName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTeacherGender">性别 *</label>
+                        <select class="form-control" id="editTeacherGender" name="gender" required>
+                            <option value="M">男</option>
+                            <option value="F">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTeacherDepartment">部门</label>
+                        <input type="text" class="form-control" id="editTeacherDepartment" name="department">
+                    </div>
+                    <div class="form-group">
+                        <label for="editTeacherTitle">职称</label>
+                        <select class="form-control" id="editTeacherTitle" name="title">
+                            <option value="">请选择</option>
+                            <option value="助教">助教</option>
+                            <option value="讲师">讲师</option>
+                            <option value="副教授">副教授</option>
+                            <option value="教授">教授</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTeacherEmail">邮箱</label>
+                        <input type="email" class="form-control" id="editTeacherEmail" name="email">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 添加教师
+document.getElementById('addTeacherForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/add_teacher', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showMessage('教师添加成功', 'success');
+            $('#addTeacherModal').modal('hide');
+            location.reload();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('操作失败，请重试', 'danger');
+    });
+});
+
+// 编辑教师
+function editTeacher(teacherId) {
+    // 这里可以通过AJAX获取教师详细信息并填充表单
+    $('#editTeacherModal').modal('show');
+}
+
+// 查看教师详情
+function viewTeacher(teacherId) {
+    showMessage('查看功能开发中...', 'info');
+}
+
+// 查看教师课程
+function viewCourses(teacherId) {
+    showMessage('课程查看功能开发中...', 'info');
+}
+
+// 删除教师
+function deleteTeacher(teacherId) {
+    if (confirm('确定要删除这个教师吗？此操作不可撤销！')) {
+        const formData = new FormData();
+        formData.append('teacher_id', teacherId);
+        
+        fetch('/admin/delete_teacher', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('教师删除成功', 'success');
+                document.getElementById(`teacher-row-${teacherId}`).remove();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('删除失败，请重试', 'danger');
+        });
+    }
+}
+
+// 搜索功能
+document.getElementById('searchInput').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#teachersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(query)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// 更新教师状态
+function updateTeacherStatus(teacherId, newStatus) {
+    if (confirm(`确定要将教师状态更改为"${newStatus}"吗？`)) {
+        fetch('/admin/update_teacher_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `teacher_id=${teacherId}&status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('教师状态更新成功', 'success');
+            } else {
+                showMessage(data.message || '状态更新失败', 'danger');
+                // 恢复原状态
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('更新失败，请重试', 'danger');
+            location.reload();
+        });
+    } else {
+        // 取消更改，恢复原值
+        location.reload();
+    }
+}
+
+// 显示消息
+function showMessage(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+
+<style>
+.badge-pink {
+    background-color: #e91e63;
+    color: white;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-header {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+{% endblock %}

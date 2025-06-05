@@ -39,6 +39,7 @@ CREATE TABLE teachers (
     college TEXT,
     title TEXT,
     contact TEXT,
+    status TEXT DEFAULT '在职',  -- 教师状态：在职/离职/退休/停职
     user_id INTEGER UNIQUE,
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
@@ -160,4 +161,62 @@ CREATE TABLE payments (
     payment_method TEXT,
     transaction_id TEXT,
     FOREIGN KEY (tuition_id) REFERENCES tuitions (id)
+);
+
+-- 注册申请表
+DROP TABLE IF EXISTS registration_applications;
+CREATE TABLE registration_applications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    application_type TEXT NOT NULL,  -- 'student' 或 'teacher'
+    name TEXT NOT NULL,
+    gender TEXT,
+    id_number TEXT UNIQUE NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT,
+    address TEXT,
+    emergency_contact TEXT,
+    emergency_phone TEXT,
+    
+    -- 学生特有字段
+    major_id INTEGER,
+    class_id INTEGER,
+    high_school TEXT,
+    exam_score TEXT,
+    guardian_name TEXT,
+    guardian_phone TEXT,
+    
+    -- 教师特有字段
+    education_level TEXT,
+    graduate_school TEXT,
+    major_field TEXT,
+    title TEXT,
+    department TEXT,
+    work_experience TEXT,
+    specialties TEXT,
+    
+    -- 通用字段
+    special_notes TEXT,
+    status TEXT DEFAULT '待审核',  -- 待审核/已通过/已拒绝
+    application_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    review_time TIMESTAMP,
+    reviewer_id TEXT,
+    review_comments TEXT,
+    
+    FOREIGN KEY (major_id) REFERENCES majors (id),
+    FOREIGN KEY (class_id) REFERENCES classes (id),
+    FOREIGN KEY (reviewer_id) REFERENCES users (username)
+);
+
+-- 申请审核记录表
+DROP TABLE IF EXISTS application_reviews;
+CREATE TABLE application_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    application_id INTEGER NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    review_action TEXT NOT NULL,  -- 'approve', 'reject', 'request_info'
+    review_comments TEXT,
+    review_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (application_id) REFERENCES registration_applications (id),
+    FOREIGN KEY (reviewer_id) REFERENCES users (username)
 );
