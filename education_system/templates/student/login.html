@@ -1,22 +1,115 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="login-container">
-    <h2>学生登录</h2>
-    <form action="#" method="post">
-        <div class="form-group">
-            <label for="student_id">学号</label>
-            <input type="text" id="student_id" name="student_id" required>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-4 col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-graduate mr-2"></i>
+                        学生登录
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <!-- 消息提示 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} mr-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form action="{{ url_for('student_login') }}" method="post">
+                        <div class="form-group">
+                            <label for="student_id">
+                                <i class="fas fa-id-card mr-1"></i>
+                                学号
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" 
+                                   placeholder="请输入学号" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">
+                                <i class="fas fa-lock mr-1"></i>
+                                密码
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                                   placeholder="请输入密码" required>
+                        </div>
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                登录
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <div class="form-links">
+                            <a href="#" class="text-muted">
+                                <i class="fas fa-question-circle mr-1"></i>
+                                忘记密码？
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        安全提示：请妥善保管您的账户信息
+                    </small>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">密码</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div class="form-group">
-            <button type="submit" class="btn">登录</button>
-        </div>        <div class="form-links">
-            <a href="#">忘记密码？</a>
-        </div>
-    </form>
+    </div>
 </div>
+
+<style>
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-radius: 0;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+}
+
+.form-links a {
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.form-links a:hover {
+    color: #007bff !important;
+    text-decoration: none;
+}
+</style>
 {% endblock %}

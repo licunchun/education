@@ -37,10 +37,9 @@
                                         <span class="badge badge-{% if course.course_type == '必修' %}danger{% else %}info{% endif %}">
                                             {{ course.course_type }}
                                         </span>
-                                    </td>
-                                    <td>{{ course.selection_time if course.selection_time else 'N/A' }}</td>
+                                    </td>                                    <td>{{ course.selection_time if course.selection_time else 'N/A' }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="dropCourse({{ course.selection_id }})">
+                                        <button class="btn btn-sm btn-outline-danger drop-course-btn" data-course-id="{{ course.id }}">
                                             退课
                                         </button>
                                     </td>
@@ -100,7 +99,7 @@
                                     </td>
                                     <td>
                                         {% if course.selected_count < course.capacity %}
-                                        <button class="btn btn-sm btn-primary" onclick="selectCourse({{ course.offered_course_id }})">
+                                        <button class="btn btn-sm btn-primary select-course-btn" data-course-id="{{ course.id }}">
                                             选课
                                         </button>
                                         {% else %}
@@ -122,38 +121,101 @@
 </div>
 
 <script>
+// 使用原生fetch API实现选课功能
 function selectCourse(offeredCourseId) {
+    console.log('选课函数被调用，课程ID:', offeredCourseId);
+    
     if (confirm('确定要选择这门课程吗？')) {
-        $.post('/student/select_course', {
-            offered_course_id: offeredCourseId
-        }, function(response) {
-            if (response.status === 'success') {
-                alert(response.message);
+        console.log('用户确认选课，开始发送请求...');
+        
+        fetch('/student/select_course/' + offeredCourseId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('收到响应状态:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('收到服务器响应:', data);
+            if (data.status === 'success') {
+                alert(data.message);
                 location.reload();
             } else {
-                alert('选课失败: ' + response.message);
+                alert('选课失败: ' + data.message);
             }
-        }).fail(function() {
+        })
+        .catch(error => {
+            console.error('请求失败:', error);
             alert('网络错误，请重试');
         });
     }
 }
 
-function dropCourse(selectionId) {
+// 使用原生fetch API实现退课功能
+function dropCourse(offeredCourseId) {
+    console.log('退课函数被调用，课程ID:', offeredCourseId);
+    
     if (confirm('确定要退选这门课程吗？')) {
-        $.post('/student/drop_course', {
-            selection_id: selectionId
-        }, function(response) {
-            if (response.status === 'success') {
-                alert(response.message);
+        console.log('用户确认退课，开始发送请求...');
+        
+        fetch('/student/drop_course/' + offeredCourseId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('收到响应状态:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('收到服务器响应:', data);
+            if (data.status === 'success') {
+                alert(data.message);
                 location.reload();
             } else {
-                alert('退课失败: ' + response.message);
+                alert('退课失败: ' + data.message);
             }
-        }).fail(function() {
+        })
+        .catch(error => {
+            console.error('请求失败:', error);
             alert('网络错误，请重试');
         });
     }
 }
+
+// 页面加载完成后绑定事件处理器
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成');
+    
+    // 为所有"选课"按钮添加点击事件
+    const selectButtons = document.querySelectorAll('.select-course-btn');
+    console.log('找到选课按钮数量:', selectButtons.length);
+    
+    selectButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const courseId = this.getAttribute('data-course-id');
+            console.log('点击选课按钮，课程ID:', courseId);
+            selectCourse(courseId);
+        });
+    });
+    
+    // 为所有"退课"按钮添加点击事件
+    const dropButtons = document.querySelectorAll('.drop-course-btn');
+    console.log('找到退课按钮数量:', dropButtons.length);
+    
+    dropButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const courseId = this.getAttribute('data-course-id');
+            console.log('点击退课按钮，课程ID:', courseId);
+            dropCourse(courseId);
+        });
+    });
+});
 </script>
 {% endblock %}

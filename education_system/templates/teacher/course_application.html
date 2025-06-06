@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center mb-4">开设课程申请</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <h4 class="mb-3">课程信息</h4>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">课程名称:</label>
+                    <div class="col-sm-9">
+                        <input type="text" name="course_name" class="form-control" placeholder="如：数据结构与算法" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">课程代码:</label>
+                    <div class="col-sm-9">
+                        <input type="text" name="course_code" class="form-control" placeholder="如：CS2001" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">课程类型:</label>
+                    <div class="col-sm-9">
+                        <select name="course_type" class="form-control" required>
+                            <option value="必修">必修</option>
+                            <option value="选修">选修</option>
+                            <option value="公共课">公共课</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">学分:</label>
+                    <div class="col-sm-9">
+                        <input type="number" name="credits" class="form-control" step="0.5" min="0.5" max="10" value="3" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">学时:</label>
+                    <div class="col-sm-9">
+                        <input type="number" name="hours" class="form-control" min="1" max="100" value="48" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">课程简介:</label>
+                    <div class="col-sm-9">
+                        <textarea name="description" class="form-control" rows="3" placeholder="请简要描述课程内容和教学目标"></textarea>
+                    </div>
+                </div>
+                  <h4 class="mb-3 mt-4">开课信息</h4>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">学年:</label>
+                    <div class="col-sm-9">
+                        <select name="academic_year" class="form-control" required>
+                            <option value="">-- 请选择学年 --</option>
+                            {% for year in academic_years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">学期:</label>
+                    <div class="col-sm-9">
+                        <select name="semester" class="form-control" required>
+                            <option value="">-- 请选择学期 --</option>
+                            <option value="第一学期">第一学期</option>
+                            <option value="第二学期">第二学期</option>
+                            <option value="暑期学期">暑期学期</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">上课时间:</label>
+                    <div class="col-sm-9">
+                        <input type="text" name="schedule" class="form-control" placeholder="如：周一 1-2节，周四 3-4节" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">上课地点:</label>
+                    <div class="col-sm-9">
+                        <input type="text" name="location" class="form-control" placeholder="如：教学楼A 203" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">课程容量:</label>
+                    <div class="col-sm-9">
+                        <input type="number" name="capacity" class="form-control" value="60" min="1" max="200" required>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">申请说明:</label>
+                    <div class="col-sm-9">
+                        <textarea name="application_note" class="form-control" rows="4" placeholder="请简要说明开课理由、教学计划等信息"></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-sm-9 offset-sm-3">
+                        <button type="submit" class="btn btn-primary">提交申请</button>
+                        <a href="{{ url_for('teacher_course_management') }}" class="btn btn-secondary ml-2">返回</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if applications %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>我的申请记录</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>课程</th>
+                        <th>学年</th>
+                        <th>学期</th>
+                        <th>申请时间</th>
+                        <th>状态</th>
+                        <th>审核结果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td>{{ app.course.code }} - {{ app.course.name }}</td>
+                        <td>{{ app.academic_year }}</td>
+                        <td>{{ app.semester }}</td>
+                        <td>{{ app.application_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if app.status == '待审核' %}
+                            <span class="badge badge-warning">{{ app.status }}</span>
+                            {% elif app.status == '已通过' %}
+                            <span class="badge badge-success">{{ app.status }}</span>
+                            {% elif app.status == '已拒绝' %}
+                            <span class="badge badge-danger">{{ app.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if app.review_comments %}
+                            {{ app.review_comments }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

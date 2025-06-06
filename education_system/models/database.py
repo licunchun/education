@@ -37,22 +37,19 @@ class Student(db.Model):
     name = db.Column(db.String(20), nullable=False)
     gender = db.Column(db.String(1))  # 'M'表示男，'F'表示女
     birth_date = db.Column(db.Date)
-    id_card = db.Column(db.String(18), unique=True)
     hometown = db.Column(db.String(100))
     enrollment_date = db.Column(db.Date)
     major_id = db.Column(db.Integer, db.ForeignKey('majors.id'))
-    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'))
     phone = db.Column(db.String(20))
     email = db.Column(db.String(50))
     address = db.Column(db.String(200))
     photo_path = db.Column(db.String(200))
     status = db.Column(db.String(20), default='在读')  # 在读/毕业/休学/退学
+    account_balance = db.Column(db.Float, default=0.0)  # 账户余额，用于学费缴纳
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True)
-    
-    # 关联关系
+      # 关联关系
     user = db.relationship('User', backref=db.backref('student', uselist=False))
     major = db.relationship('Major', backref='students')
-    class_obj = db.relationship('Class', backref='students')
     grades = db.relationship('Grade', backref='student', lazy=True)
     
     def __repr__(self):
@@ -183,6 +180,7 @@ class Tuition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(20), db.ForeignKey('students.id'), nullable=False)
     academic_year = db.Column(db.String(20), nullable=False)
+    semester = db.Column(db.String(20), default='全年')  # 学期：第一学期/第二学期/全年
     amount = db.Column(db.Float, nullable=False)
     paid_amount = db.Column(db.Float, default=0)
     status = db.Column(db.String(20), default='未缴费')  # 未缴费/部分缴费/已缴费
@@ -213,19 +211,15 @@ class RegistrationApplication(db.Model):
     __tablename__ = 'registration_applications'
     id = db.Column(db.Integer, primary_key=True)
     application_type = db.Column(db.String(20), nullable=False)  # 'student' or 'teacher'
-    
-    # 通用字段
+      # 通用字段
     name = db.Column(db.String(50), nullable=False)
     gender = db.Column(db.String(1))
-    id_number = db.Column(db.String(18), nullable=False)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
-    
-    # 学生专用字段
+      # 学生专用字段
     birth_date = db.Column(db.Date)
     hometown = db.Column(db.String(100))
     major_id = db.Column(db.Integer, db.ForeignKey('majors.id'))
-    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'))
     guardian_name = db.Column(db.String(50))
     guardian_phone = db.Column(db.String(20))
     address = db.Column(db.Text)
@@ -236,18 +230,18 @@ class RegistrationApplication(db.Model):
     department = db.Column(db.String(100))
     work_experience = db.Column(db.Text)
     specialties = db.Column(db.Text)
-    
-    # 通用字段
+      # 通用字段
     special_notes = db.Column(db.Text)
     status = db.Column(db.String(20), default='待审核')  # 待审核/已通过/已拒绝
     application_time = db.Column(db.DateTime, default=datetime.now)
     review_time = db.Column(db.DateTime)
     reviewer_id = db.Column(db.String(50), db.ForeignKey('users.username'))
     review_comments = db.Column(db.Text)
+    assigned_id = db.Column(db.String(50))  # 存储分配的学号/教师号
+    initial_password = db.Column(db.String(50))  # 存储初始密码
     
     # 关联关系
     major = db.relationship('Major', backref='applications')
-    class_obj = db.relationship('Class', backref='applications')
     reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='reviewed_applications')
     
     def __repr__(self):
@@ -269,3 +263,29 @@ class ApplicationReview(db.Model):
     
     def __repr__(self):
         return f'<ApplicationReview {self.application_id} {self.review_action}>'
+
+# 课程申请表
+class CourseApplication(db.Model):
+    __tablename__ = 'course_applications'
+    id = db.Column(db.Integer, primary_key=True)
+    teacher_id = db.Column(db.String(20), db.ForeignKey('teachers.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    academic_year = db.Column(db.String(20), nullable=False)
+    semester = db.Column(db.String(20), nullable=False)
+    schedule = db.Column(db.String(100))
+    location = db.Column(db.String(100))
+    capacity = db.Column(db.Integer, default=60)
+    application_note = db.Column(db.Text)
+    application_time = db.Column(db.DateTime, default=datetime.now)
+    status = db.Column(db.String(20), default='待审核')  # 待审核/已通过/已拒绝
+    review_time = db.Column(db.DateTime)
+    reviewer_id = db.Column(db.String(50), db.ForeignKey('users.username'))
+    review_comments = db.Column(db.Text)
+    
+    # 关联关系
+    teacher = db.relationship('Teacher', backref='course_applications')
+    course = db.relationship('Course', backref='applications')
+    reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='reviewed_course_applications')
+    
+    def __repr__(self):
+        return f'<CourseApplication {self.id} {self.course_id} {self.teacher_id}>'

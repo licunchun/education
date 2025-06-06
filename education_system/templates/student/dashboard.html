@@ -2,26 +2,22 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <h2>学生控制面板</h2>
-    
-    <div class="dashboard-section">
+    <h2>学生控制面板</h2>    <div class="dashboard-section">
         <h3>个人信息</h3>
-        <div class="info-card">
-            <div class="info-item">
-                <span class="info-label">学号:</span>
-                <span class="info-value">{{ student.id }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">姓名:</span>
-                <span class="info-value">{{ student.name }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">专业:</span>
-                <span class="info-value">{{ student.major }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">班级:</span>
-                <span class="info-value">{{ student.class_name }}</span>
+        <div class="info-card" style="display: block; width: 100%;">
+            <div class="info-row" style="display: flex; justify-content: space-between; width: 100%; margin: 10px 0;">
+                <div class="info-item" style="width: auto; margin-right: 60px;">
+                    <span class="info-label">学号:</span>
+                    <span class="info-value">{{ student.id }}</span>
+                </div>
+                <div class="info-item" style="width: auto; margin-right: 60px;">
+                    <span class="info-label">姓名:</span>
+                    <span class="info-value">{{ student.name }}</span>
+                </div>
+                <div class="info-item" style="width: auto;">
+                    <span class="info-label">专业:</span>
+                    <span class="info-value">{{ student.major }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -37,11 +33,10 @@
                 <h4>成绩查询</h4>
                 <p>查看个人课程成绩</p>
                 <a href="{{ url_for('student_grades') }}" class="btn">进入</a>
-            </div>
-            <div class="menu-card">
+            </div>            <div class="menu-card">
                 <h4>学费缴纳</h4>
                 <p>查看学费信息、在线缴费</p>
-                <a href="#" class="btn">进入</a>
+                <a href="{{ url_for('student_tuition') }}" class="btn">进入</a>
             </div>
         </div>
     </div>

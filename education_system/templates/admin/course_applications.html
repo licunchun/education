@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center mb-4">课程申请审核</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#pending" data-toggle="tab">待审核</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#approved" data-toggle="tab">已通过</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#rejected" data-toggle="tab">已拒绝</a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="pending">
+                    {% if pending_applications %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>教师</th>
+                                <th>课程</th>
+                                <th>学年</th>
+                                <th>学期</th>
+                                <th>申请时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in pending_applications %}
+                            <tr>
+                                <td>{{ app.teacher.name }}</td>
+                                <td>{{ app.course.code }} - {{ app.course.name }}</td>
+                                <td>{{ app.academic_year }}</td>
+                                <td>{{ app.semester }}</td>
+                                <td>{{ app.application_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#viewModal{{ app.id }}">
+                                        查看详情
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- 详情模态框 -->
+                            <div class="modal fade" id="viewModal{{ app.id }}" tabindex="-1" role="dialog" aria-labelledby="viewModalLabel{{ app.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="viewModalLabel{{ app.id }}">申请详情</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>教师:</strong> {{ app.teacher.name }} ({{ app.teacher.id }})</p>
+                                                    <p><strong>课程:</strong> {{ app.course.code }} - {{ app.course.name }}</p>
+                                                    <p><strong>学分:</strong> {{ app.course.credits }}</p>
+                                                    <p><strong>学时:</strong> {{ app.course.hours }}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>学年:</strong> {{ app.academic_year }}</p>
+                                                    <p><strong>学期:</strong> {{ app.semester }}</p>
+                                                    <p><strong>上课时间:</strong> {{ app.schedule }}</p>
+                                                    <p><strong>上课地点:</strong> {{ app.location }}</p>
+                                                    <p><strong>课程容量:</strong> {{ app.capacity }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <p><strong>申请说明:</strong></p>
+                                                    <div class="p-3 bg-light rounded">
+                                                        {{ app.application_note or '无' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <form method="post" action="{{ url_for('admin_course_application_approve', app_id=app.id) }}" class="mt-4">
+                                                <div class="form-group">
+                                                    <label for="review_comments{{ app.id }}">审核意见:</label>
+                                                    <textarea class="form-control" id="review_comments{{ app.id }}" name="review_comments" rows="3"></textarea>
+                                                </div>
+                                                <div class="form-group text-center">
+                                                    <button type="submit" class="btn btn-success mr-3">通过</button>
+                                                    <button type="submit" class="btn btn-danger" formaction="{{ url_for('admin_course_application_reject', app_id=app.id) }}">拒绝</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="alert alert-info">没有待审核的课程申请</div>
+                    {% endif %}
+                </div>
+                
+                <div class="tab-pane fade" id="approved">
+                    {% if approved_applications %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>教师</th>
+                                <th>课程</th>
+                                <th>学年</th>
+                                <th>学期</th>
+                                <th>审核时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in approved_applications %}
+                            <tr>
+                                <td>{{ app.teacher.name }}</td>
+                                <td>{{ app.course.code }} - {{ app.course.name }}</td>
+                                <td>{{ app.academic_year }}</td>
+                                <td>{{ app.semester }}</td>
+                                <td>{{ app.review_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#viewModalApproved{{ app.id }}">
+                                        查看详情
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- 详情模态框 -->
+                            <div class="modal fade" id="viewModalApproved{{ app.id }}" tabindex="-1" role="dialog" aria-labelledby="viewModalLabelApproved{{ app.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="viewModalLabelApproved{{ app.id }}">申请详情</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>教师:</strong> {{ app.teacher.name }} ({{ app.teacher.id }})</p>
+                                                    <p><strong>课程:</strong> {{ app.course.code }} - {{ app.course.name }}</p>
+                                                    <p><strong>学分:</strong> {{ app.course.credits }}</p>
+                                                    <p><strong>学时:</strong> {{ app.course.hours }}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>学年:</strong> {{ app.academic_year }}</p>
+                                                    <p><strong>学期:</strong> {{ app.semester }}</p>
+                                                    <p><strong>上课时间:</strong> {{ app.schedule }}</p>
+                                                    <p><strong>上课地点:</strong> {{ app.location }}</p>
+                                                    <p><strong>课程容量:</strong> {{ app.capacity }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <p><strong>申请说明:</strong></p>
+                                                    <div class="p-3 bg-light rounded">
+                                                        {{ app.application_note or '无' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <p><strong>审核意见:</strong></p>
+                                                    <div class="p-3 bg-light rounded">
+                                                        {{ app.review_comments or '无' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="alert alert-info">没有已通过的课程申请</div>
+                    {% endif %}
+                </div>
+                
+                <div class="tab-pane fade" id="rejected">
+                    {% if rejected_applications %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>教师</th>
+                                <th>课程</th>
+                                <th>学年</th>
+                                <th>学期</th>
+                                <th>审核时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in rejected_applications %}
+                            <tr>
+                                <td>{{ app.teacher.name }}</td>
+                                <td>{{ app.course.code }} - {{ app.course.name }}</td>
+                                <td>{{ app.academic_year }}</td>
+                                <td>{{ app.semester }}</td>
+                                <td>{{ app.review_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#viewModalRejected{{ app.id }}">
+                                        查看详情
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- 详情模态框 -->
+                            <div class="modal fade" id="viewModalRejected{{ app.id }}" tabindex="-1" role="dialog" aria-labelledby="viewModalLabelRejected{{ app.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="viewModalLabelRejected{{ app.id }}">申请详情</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>教师:</strong> {{ app.teacher.name }} ({{ app.teacher.id }})</p>
+                                                    <p><strong>课程:</strong> {{ app.course.code }} - {{ app.course.name }}</p>
+                                                    <p><strong>学分:</strong> {{ app.course.credits }}</p>
+                                                    <p><strong>学时:</strong> {{ app.course.hours }}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>学年:</strong> {{ app.academic_year }}</p>
+                                                    <p><strong>学期:</strong> {{ app.semester }}</p>
+                                                    <p><strong>上课时间:</strong> {{ app.schedule }}</p>
+                                                    <p><strong>上课地点:</strong> {{ app.location }}</p>
+                                                    <p><strong>课程容量:</strong> {{ app.capacity }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <p><strong>申请说明:</strong></p>
+                                                    <div class="p-3 bg-light rounded">
+                                                        {{ app.application_note or '无' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <p><strong>拒绝理由:</strong></p>
+                                                    <div class="p-3 bg-light rounded">
+                                                        {{ app.review_comments or '无' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="alert alert-info">没有已拒绝的课程申请</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

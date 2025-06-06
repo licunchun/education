@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- 页面标题和操作按钮 -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="page-title">
+                    <i class="fas fa-credit-card text-primary"></i> 
+                    <span class="ml-2">学费缴纳</span>
+                </h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('student_recharge') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus"></i> 
+                        <span class="ml-1">账户充值</span>
+                    </a>
+                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-secondary btn-lg ml-2">
+                        <i class="fas fa-arrow-left"></i> 
+                        <span class="ml-1">返回控制面板</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 账户信息卡片 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-wallet"></i> 
+                        <span class="ml-2">账户财务概览</span>
+                    </h5>
+                </div>
+                <div class="card-body py-4">
+                    <div class="row text-center">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="financial-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-wallet text-success"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-label">账户余额</div>
+                                    <div class="stat-value text-success">
+                                        ¥{{ "%.2f"|format(stats.account_balance) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="financial-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-exclamation-circle text-{{ 'danger' if stats.total_unpaid > 0 else 'success' }}"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-label">待缴学费</div>
+                                    <div class="stat-value text-{{ 'danger' if stats.total_unpaid > 0 else 'success' }}">
+                                        ¥{{ "%.2f"|format(stats.total_unpaid) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-12 mb-3">
+                            <div class="financial-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-chart-line text-{{ 'success' if stats.can_pay else 'warning' }}"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-label">可用余额</div>
+                                    <div class="stat-value text-{{ 'success' if stats.can_pay else 'warning' }}">
+                                        ¥{{ "%.2f"|format(stats.account_balance - stats.total_unpaid) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if not stats.can_pay and stats.total_unpaid > 0 %}
+                    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                        <i class="fas fa-exclamation-triangle mr-3"></i>
+                        <div>
+                            <strong>余额不足提醒：</strong>
+                            您的账户余额不足以支付所有未缴学费，建议及时充值避免影响学业。
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 学费记录卡片 -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-alt text-primary"></i> 
+                        <span class="ml-2">学费缴纳记录</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if tuitions %}
+                        <div class="tuition-list">
+                            {% for tuition in tuitions %}
+                            <div class="tuition-card mb-4 p-4 border rounded-lg 
+                                {{ 'border-danger bg-light-danger' if tuition.is_overdue 
+                                   else 'border-success bg-light-success' if tuition.status == '已缴清' 
+                                   else 'border-warning bg-light-warning' }}">
+                                
+                                <!-- 学费标题行 -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="tuition-title">
+                                        <h6 class="mb-1 font-weight-bold">
+                                            {{ tuition.academic_year }} {{ tuition.semester }}
+                                        </h6>
+                                        <div class="tuition-badges">
+                                            <span class="badge badge-{{ 'success' if tuition.status == '已缴清' else 'danger' if tuition.is_overdue else 'warning' }} mr-2">
+                                                {{ tuition.status }}
+                                            </span>
+                                            {% if tuition.is_overdue %}
+                                            <span class="badge badge-danger">已逾期</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if tuition.due_date %}
+                                    <div class="due-date text-right">
+                                        <small class="text-muted d-block">缴费截止日期</small>
+                                        <span class="font-weight-bold {{ 'text-danger' if tuition.is_overdue else 'text-primary' }}">
+                                            {{ tuition.due_date.strftime('%Y年%m月%d日') }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- 学费详情 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <div class="row">
+                                            <div class="col-sm-4 mb-2">
+                                                <div class="tuition-detail">
+                                                    <small class="text-muted d-block">应缴金额</small>
+                                                    <span class="h5 mb-0 text-primary">¥{{ "%.2f"|format(tuition.amount) }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4 mb-2">
+                                                <div class="tuition-detail">
+                                                    <small class="text-muted d-block">已缴金额</small>
+                                                    <span class="h5 mb-0 text-success">¥{{ "%.2f"|format(tuition.paid_amount) }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4 mb-2">
+                                                <div class="tuition-detail">
+                                                    <small class="text-muted d-block">剩余金额</small>
+                                                    <span class="h5 mb-0 text-{{ 'success' if tuition.remaining <= 0 else 'danger' }}">
+                                                        ¥{{ "%.2f"|format(tuition.remaining) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 缴费操作区 -->
+                                    <div class="col-md-4">
+                                        {% if tuition.remaining > 0 %}
+                                        <div class="payment-section">
+                                            <form method="POST" action="{{ url_for('student_pay_tuition', tuition_id=tuition.id) }}" class="payment-form">
+                                                <div class="form-group mb-2">
+                                                    <label class="small text-muted mb-1">缴费金额</label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">¥</span>
+                                                        </div>
+                                                        <input type="number" name="amount" class="form-control text-right" 
+                                                               placeholder="金额" step="0.01" min="0.01" 
+                                                               max="{{ tuition.remaining }}" value="{{ tuition.remaining }}">
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary btn-block"
+                                                        {{ 'disabled' if stats.account_balance < tuition.remaining else '' }}>
+                                                    <i class="fas fa-credit-card mr-1"></i>
+                                                    {{ '余额不足' if stats.account_balance < tuition.remaining else '立即缴费' }}
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center">
+                                            <div class="badge badge-success badge-lg p-3">
+                                                <i class="fas fa-check-circle mr-2"></i>
+                                                已缴清
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- 支付历史记录 -->
+                                {% if tuition.payments %}
+                                <div class="payment-history mt-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <h6 class="mb-0 text-muted">
+                                            <i class="fas fa-history mr-2"></i>支付记录
+                                        </h6>
+                                        <hr class="flex-grow-1 ml-3">
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th class="border-0">支付时间</th>
+                                                    <th class="border-0">金额</th>
+                                                    <th class="border-0">支付方式</th>
+                                                    <th class="border-0">交易号</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for payment in tuition.payments %}
+                                                <tr>
+                                                    <td>{{ payment.payment_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                    <td class="text-success font-weight-bold">¥{{ "%.2f"|format(payment.amount) }}</td>
+                                                    <td>
+                                                        <span class="badge badge-info">{{ payment.payment_method }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <code class="small">{{ payment.transaction_id }}</code>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                    <div class="empty-state text-center py-5">
+                        <div class="empty-icon mb-3">
+                            <i class="fas fa-receipt fa-4x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">暂无学费记录</h5>
+                        <p class="text-muted">
+                            如有疑问，请联系财务部门<br>
+                            <strong>电话：</strong>0551-12345678 | 
+                            <strong>邮箱：</strong>finance@school.edu.cn
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 页面整体样式 */
+.page-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* 渐变背景 */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-light-success {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.bg-light-warning {
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.bg-light-danger {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* 财务统计卡片 */
+.financial-stat {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.financial-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.stat-icon {
+    margin-right: 1rem;
+    font-size: 2rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* 学费卡片 */
+.tuition-card {
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.tuition-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.rounded-lg {
+    border-radius: 12px !important;
+}
+
+.tuition-title h6 {
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.tuition-badges .badge {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.tuition-detail {
+    text-align: left;
+}
+
+.tuition-detail small {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* 缴费表单 */
+.payment-section {
+    background: rgba(255,255,255,0.7);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.payment-form .form-control {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+}
+
+.payment-form .btn {
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+}
+
+/* 支付历史 */
+.payment-history .table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.payment-history .table td,
+.payment-history .table th {
+    padding: 0.75rem;
+    border-top: 1px solid #f8f9fa;
+}
+
+.payment-history .table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 空状态 */
+.empty-state .empty-icon {
+    opacity: 0.6;
+}
+
+/* 大徽章 */
+.badge-lg {
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.5rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .financial-stat {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+    
+    .stat-icon {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .tuition-card {
+        padding: 1.5rem !important;
+    }
+      .payment-section {
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        margin: 0.25rem 0 !important;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

@@ -1,50 +1,343 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="welcome-section">
-    <h2>欢迎使用学籍管理系统</h2>
-    <p>本系统提供学生信息管理、课程管理、成绩管理等功能，方便学校进行教务管理。</p>
-      <div class="portal-links">        <div class="portal">
-            <h3>学生入口</h3>
-            <p>查看个人信息、选课、查询成绩、缴纳学费</p>
-            <a href="{{ url_for('student_login') }}" class="btn">登录</a>
-        </div>
-        
-        <div class="portal">
-            <h3>教师入口</h3>
-            <p>管理课程、录入成绩、查看学生名单</p>
-            <a href="{{ url_for('teacher_login') }}" class="btn">登录</a>
-        </div>
-        
-        <div class="portal">
-            <h3>管理员入口</h3>
-            <p>系统管理、信息维护、数据统计</p>
-            <a href="{{ url_for('admin_login') }}" class="btn">登录</a>
-        </div>
-    </div>
-      <div class="additional-links">
-        <h3>注册申请</h3>
-        <div class="service-links">
-            <a href="{{ url_for('student_register') }}" class="service-link">
-                <i class="icon">🎓</i>
-                <span>学生注册申请</span>
-                <small>提交学生入学申请，等待管理员审批</small>
-            </a>
-            <a href="{{ url_for('teacher_register') }}" class="service-link">
-                <i class="icon">👨‍🏫</i>
-                <span>教师注册申请</span>
-                <small>提交教师入职申请，等待管理员审批</small>
-            </a>
-        </div>
-        
-        <h3>其他服务</h3>
-        <div class="service-links">
-            <a href="{{ url_for('application_status') }}" class="service-link">
-                <i class="icon">🔍</i>
-                <span>申请状态查询</span>
-                <small>查询注册申请审核进度</small>
-            </a>
+<!-- 英雄区域 -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <div class="hero-content">
+                    <h1 class="display-4 font-weight-bold text-white mb-4">
+                        <i class="fas fa-university mr-3"></i>
+                        学籍管理系统
+                    </h1>
+                    <p class="lead text-white-50 mb-5">
+                        现代化的教务管理平台，提供学生信息管理、课程管理、成绩管理等全方位服务
+                    </p>
+                    <div class="hero-stats">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <i class="fas fa-users fa-2x text-info mb-2"></i>
+                                    <h3 class="text-white">学生管理</h3>
+                                    <p class="text-white-50">全面的学生信息管理</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <i class="fas fa-book fa-2x text-success mb-2"></i>
+                                    <h3 class="text-white">课程管理</h3>
+                                    <p class="text-white-50">智能化的课程安排</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <i class="fas fa-chart-bar fa-2x text-warning mb-2"></i>
+                                    <h3 class="text-white">成绩管理</h3>
+                                    <p class="text-white-50">便捷的成绩录入查询</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- 登录入口区域 -->
+<div class="login-portals">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">
+                    <i class="fas fa-door-open mr-2"></i>
+                    选择登录入口
+                </h2>
+                <p class="text-muted">根据您的身份选择对应的登录入口</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="portal-card">
+                    <div class="portal-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>学生入口</h3>
+                    <p>查看个人信息、选课报名、成绩查询、学费缴纳</p>
+                    <div class="portal-features">
+                        <span class="feature-tag">选课管理</span>
+                        <span class="feature-tag">成绩查询</span>
+                        <span class="feature-tag">学费缴纳</span>
+                    </div>
+                    <a href="{{ url_for('student_login') }}" class="btn btn-primary btn-portal">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        学生登录
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="portal-card">
+                    <div class="portal-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3>教师入口</h3>
+                    <p>课程管理、成绩录入、学生管理、教学统计</p>
+                    <div class="portal-features">
+                        <span class="feature-tag">课程管理</span>
+                        <span class="feature-tag">成绩录入</span>
+                        <span class="feature-tag">学生管理</span>
+                    </div>
+                    <a href="{{ url_for('teacher_login') }}" class="btn btn-success btn-portal">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        教师登录
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="portal-card">
+                    <div class="portal-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <h3>管理员入口</h3>
+                    <p>系统管理、用户管理、数据统计、审核管理</p>
+                    <div class="portal-features">
+                        <span class="feature-tag">系统管理</span>
+                        <span class="feature-tag">用户审核</span>
+                        <span class="feature-tag">数据统计</span>
+                    </div>
+                    <a href="{{ url_for('admin_login') }}" class="btn btn-warning btn-portal">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        管理员登录
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 服务区域 -->
+<div class="services-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">
+                    <i class="fas fa-cog mr-2"></i>
+                    其他服务
+                </h2>
+                <p class="text-muted">注册申请和状态查询服务</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h4>学生注册申请</h4>
+                    <p>提交学生入学申请，等待管理员审批</p>
+                    <a href="{{ url_for('student_register') }}" class="btn btn-outline-primary">
+                        立即申请
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-chalkboard"></i>
+                    </div>
+                    <h4>教师注册申请</h4>
+                    <p>提交教师入职申请，等待管理员审批</p>
+                    <a href="{{ url_for('teacher_register') }}" class="btn btn-outline-success">
+                        立即申请
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4>申请状态查询</h4>
+                    <p>查询注册申请的审核进度和结果</p>
+                    <a href="{{ url_for('application_status') }}" class="btn btn-outline-info">
+                        查询状态
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 英雄区域样式 */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 100px 0;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 2rem;
+}
+
+.hero-stats {
+    margin-top: 4rem;
+}
+
+.stat-item {
+    padding: 2rem 1rem;
+}
+
+/* 登录入口样式 */
+.login-portals {
+    padding: 80px 0;
+    background-color: #f8f9fa;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.portal-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    border: 1px solid #e9ecef;
+}
+
+.portal-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.portal-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.portal-icon i {
+    font-size: 2.5rem;
+    color: white;
+}
+
+.portal-card h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.portal-card p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.portal-features {
+    margin-bottom: 2rem;
+}
+
+.feature-tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    margin: 0.2rem;
+}
+
+.btn-portal {
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+/* 服务区域样式 */
+.services-section {
+    padding: 80px 0;
+    background: white;
+}
+
+.service-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.service-card:hover {
+    background: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.service-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-card h4 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.service-card p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-stats {
+        margin-top: 2rem;
+    }
+    
+    .login-portals {
+        padding: 50px 0;
+    }
+    
+    .services-section {
+        padding: 50px 0;
+    }
+}
+</style>
 {% endblock %}

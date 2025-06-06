@@ -93,7 +93,7 @@ python start_server.py
 
 ## 数据库结构
 
-系统使用SQLite数据库，包含以下主要数据表：
+系统使用MySQL数据库，包含以下主要数据表：
 - `users` - 用户账户信息
 - `students` - 学生详细信息
 - `teachers` - 教师详细信息
@@ -107,7 +107,8 @@ python start_server.py
 
 - Python 3.7+
 - Flask 2.0+
-- SQLite 3
+- MySQL 8.0+
+- PyMySQL 驱动
 
 ## 系统特色
 

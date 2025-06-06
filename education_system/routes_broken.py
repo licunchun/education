@@ -1,10 +1,9 @@
 # 路由和视图函数 - 完整版本，包含数据库校验
-from flask import render_template, redirect, url_for, flash, request, session, jsonify
+from flask import render_template, redirect, url_for, flash, request, session
 from education_system import app, db
 from education_system.models.database import (
     User, Student, Teacher, Role, Course, OfferedCourse, CourseSelection, Grade,
-    Major, Class, RegistrationApplication, ApplicationReview, Tuition, Payment,
-    CourseApplication
+    Major, Class, RegistrationApplication, ApplicationReview, Tuition, Payment
 )
 import hashlib
 from datetime import datetime
@@ -250,21 +249,22 @@ def student_register():
 @app.route('/register/teacher', methods=['GET', 'POST'])
 def teacher_register():
     if request.method == 'POST':
-        try:
-            # 获取表单数据
+        try:            # 获取表单数据
             data = {
                 'application_type': 'teacher',
-                'name': request.form.get('name'),
+                'name': request.form.get('real_name'),
                 'gender': request.form.get('gender'),
                 'phone': request.form.get('phone'),
                 'email': request.form.get('email'),
                 'major_field': request.form.get('major_field'),
                 'title': request.form.get('title'),
-                'department': request.form.get('department'),
+                'department': request.form.get('college'),
+                'work_experience': request.form.get('work_experience'),
+                'specialties': request.form.get('specialties'),
                 'special_notes': request.form.get('special_notes', '')
             }
             
-            # 验证手机号是否已存在
+            # 验证手机号是否已存在（使用手机号替代身份证号进行重复检查）
             existing_app = RegistrationApplication.query.filter_by(
                 phone=data['phone'],
                 application_type='teacher'
@@ -365,22 +365,20 @@ def student_courses():
             'schedule': offered.schedule,
             'location': offered.location
         })
+    
     available_data = []
     for offered, course, teacher in available_courses:
         available_data.append({
             'id': offered.id,
             'course_name': course.name,
             'teacher_name': teacher.name,
-            'title': teacher.title or '教师',
             'credits': course.credits,
             'hours': course.hours,
             'course_type': course.course_type,
             'schedule': offered.schedule,
             'location': offered.location,
             'capacity': offered.capacity,
-            'selected_count': offered.selected_count,
-            'description': course.description,
-            'can_select': offered.selected_count < offered.capacity
+            'selected_count': offered.selected_count,            'can_select': offered.selected_count < offered.capacity
         })
     
     return render_template('student/courses.html', 
@@ -391,82 +389,79 @@ def student_courses():
 @app.route('/student/select_course/<int:course_id>', methods=['POST'])
 def student_select_course(course_id):
     if 'student_id' not in session or session.get('user_type') != 'student':
-        return jsonify({'status': 'error', 'message': '请先登录'})
+        flash('请先登录', 'error')
+        return redirect(url_for('student_login'))
     
     student_id = session['student_id']
     
-    try:
-        # 检查课程是否存在
-        offered_course = OfferedCourse.query.get_or_404(course_id)
-        
-        # 检查是否已选
-        existing = CourseSelection.query.filter_by(
-            student_id=student_id,
-            offered_course_id=course_id,
-            status='已选'
-        ).first()
-        
-        if existing:
-            return jsonify({'status': 'error', 'message': '您已经选择了这门课程'})
-        
-        # 检查容量
-        if offered_course.selected_count >= offered_course.capacity:
-            return jsonify({'status': 'error', 'message': '课程已满，无法选课'})
-        
-        # 添加选课记录
-        from datetime import datetime
-        selection = CourseSelection(
-            student_id=student_id,
-            offered_course_id=course_id,
-            selection_time=datetime.now(),
-            status='已选'
-        )
-        
-        # 更新选课人数
-        offered_course.selected_count += 1
-        
-        db.session.add(selection)
-        db.session.commit()
-        
-        return jsonify({'status': 'success', 'message': '选课成功！'})
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': f'选课失败：{str(e)}'})
+    # 检查课程是否存在
+    offered_course = OfferedCourse.query.get_or_404(course_id)
+    
+    # 检查是否已选
+    existing = CourseSelection.query.filter_by(
+        student_id=student_id,
+        offered_course_id=course_id,
+        status='已选'
+    ).first()
+    
+    if existing:
+        flash('您已经选择了这门课程', 'warning')
+        return redirect(url_for('student_courses'))
+    
+    # 检查容量
+    if offered_course.selected_count >= offered_course.capacity:
+        flash('课程已满，无法选课', 'error')
+        return redirect(url_for('student_courses'))
+    
+    # 添加选课记录
+    from datetime import datetime
+    selection = CourseSelection(
+        student_id=student_id,
+        offered_course_id=course_id,
+        selection_time=datetime.now(),
+        status='已选'
+    )
+    
+    # 更新选课人数
+    offered_course.selected_count += 1
+    
+    db.session.add(selection)
+    db.session.commit()
+    
+    flash('选课成功！', 'success')
+    return redirect(url_for('student_courses'))
 
 @app.route('/student/drop_course/<int:course_id>', methods=['POST'])
 def student_drop_course(course_id):
     if 'student_id' not in session or session.get('user_type') != 'student':
-        return jsonify({'status': 'error', 'message': '请先登录'})
+        flash('请先登录', 'error')
+        return redirect(url_for('student_login'))
     
     student_id = session['student_id']
     
-    try:
-        # 查找选课记录
-        selection = CourseSelection.query.filter_by(
-            student_id=student_id,
-            offered_course_id=course_id,
-            status='已选'
-        ).first()
-        
-        if not selection:
-            return jsonify({'status': 'error', 'message': '未找到选课记录'})
-        
-        # 更新状态为已退
-        selection.status = '已退'
-        
-        # 减少选课人数
-        offered_course = OfferedCourse.query.get(course_id)
-        if offered_course and offered_course.selected_count > 0:
-            offered_course.selected_count -= 1
-        
-        db.session.commit()
-        
-        return jsonify({'status': 'success', 'message': '退课成功！'})
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': f'退课失败：{str(e)}'})
+    # 查找选课记录
+    selection = CourseSelection.query.filter_by(
+        student_id=student_id,
+        offered_course_id=course_id,
+        status='已选'
+    ).first()
+    
+    if not selection:
+        flash('未找到选课记录', 'error')
+        return redirect(url_for('student_courses'))
+    
+    # 更新状态为已退
+    selection.status = '已退'
+    
+    # 减少选课人数
+    offered_course = OfferedCourse.query.get(course_id)
+    if offered_course.selected_count > 0:
+        offered_course.selected_count -= 1
+    
+    db.session.commit()
+    
+    flash('退课成功！', 'success')
+    return redirect(url_for('student_courses'))
 
 @app.route('/student/grades')
 def student_grades():
@@ -585,24 +580,20 @@ def teacher_view_students(course_id):
         flash('您没有权限查看该课程', 'error')
         return redirect(url_for('teacher_course_management'))
     
-    # 获取课程信息
-    course = Course.query.get(offered_course.course_id)
-    if not course:
-        flash('课程信息不存在', 'error')
-        return redirect(url_for('teacher_course_management'))
-
     # 获取选课学生信息
     students = db.session.query(
-        Student, CourseSelection
+        Student, CourseSelection, Course
     ).join(CourseSelection, Student.id == CourseSelection.student_id)\
+     .join(OfferedCourse, CourseSelection.offered_course_id == OfferedCourse.id)\
+     .join(Course, OfferedCourse.course_id == Course.id)\
      .filter(CourseSelection.offered_course_id == course_id)\
      .filter(CourseSelection.status == '已选')\
      .order_by(Student.id)\
      .all()
-
+    
     # 格式化学生数据
     students_data = []
-    for student, selection in students:
+    for student, selection, course in students:
         # 获取该学生的成绩记录
         grade = Grade.query.filter_by(
             student_id=student.id,
@@ -611,14 +602,12 @@ def teacher_view_students(course_id):
         
         student_info = {
             'id': student.id,
-            'name': student.name,
-            'major': student.major.name if student.major else '未设置',
+            'name': student.name,            'major': student.major.name if student.major else '未设置',
             'selection_time': selection.selection_time.strftime('%Y-%m-%d %H:%M'),
             'regular_grade': grade.regular_grade if grade else None,
             'exam_grade': grade.exam_grade if grade else None,
             'final_grade': grade.final_grade if grade else None,
-            'gpa': grade.gpa if grade else None,
-            'grade_status': grade.status if grade else '未录入'
+            'gpa': grade.gpa if grade else None,            'grade_status': grade.status if grade else '未录入'
         }
         students_data.append(student_info)
     
@@ -916,18 +905,12 @@ def approve_application(app_id):
                 user_id=user.id
             )
             db.session.add(teacher)
-          # 更新申请状态
+        
+        # 更新申请状态
         application.status = '已通过'
         application.review_time = datetime.now()
         application.reviewer_id = session['admin_id']
         application.review_comments = review_comments
-        
-        # 存储分配的ID和默认密码到申请记录中，以便用户查询
-        if application.application_type == 'student':
-            application.assigned_id = student_id
-        else:
-            application.assigned_id = teacher_id
-        application.initial_password = '123456'  # 与上面设置的默认密码一致
         
         db.session.commit()
         flash('申请已通过审核，账户创建成功', 'success')
@@ -969,275 +952,37 @@ def reject_application(app_id):
     
     return redirect(url_for('admin_applications'))
 
-# 教师申请开设课程
-@app.route('/teacher/course_application', methods=['GET', 'POST'])
-def teacher_course_application():
-    if 'teacher_id' not in session or session.get('user_type') != 'teacher':
-        flash('请先登录', 'error')
-        return redirect(url_for('teacher_login'))
-    
-    teacher_id = session['teacher_id']
-    
-    if request.method == 'POST':
-        try:
-            # 获取课程信息
-            course_name = request.form.get('course_name')
-            course_code = request.form.get('course_code')
-            course_type = request.form.get('course_type')
-            credits = request.form.get('credits')
-            hours = request.form.get('hours')
-            description = request.form.get('description')
-            
-            # 获取开课信息
-            academic_year = request.form.get('academic_year')
-            semester = request.form.get('semester')
-            schedule = request.form.get('schedule')
-            location = request.form.get('location')
-            capacity = request.form.get('capacity')
-            application_note = request.form.get('application_note')
-            
-            # 验证必填字段
-            required_fields = {
-                '课程名称': course_name,
-                '课程代码': course_code,
-                '课程类型': course_type,
-                '学分': credits,
-                '学时': hours,
-                '学年': academic_year,
-                '学期': semester,
-                '上课时间': schedule,
-                '上课地点': location,
-                '课程容量': capacity
-            }
-            
-            for field_name, field_value in required_fields.items():
-                if not field_value:
-                    flash(f'请填写{field_name}', 'error')
-                    return redirect(url_for('teacher_course_application'))
-            
-            # 检查课程代码是否已存在
-            existing_course = Course.query.filter_by(code=course_code).first()
-            if existing_course:
-                flash(f'课程代码 {course_code} 已存在，请使用其他代码', 'error')
-                return redirect(url_for('teacher_course_application'))
-            
-            # 1. 创建新课程
-            course = Course(
-                code=course_code,
-                name=course_name,
-                course_type=course_type,
-                credits=float(credits),
-                hours=int(hours),
-                description=description
-            )
-            db.session.add(course)
-            db.session.flush()  # 获取课程ID
-            
-            # 2. 创建课程申请
-            application = CourseApplication(
-                teacher_id=teacher_id,
-                course_id=course.id,
-                academic_year=academic_year,
-                semester=semester,
-                schedule=schedule,
-                location=location,
-                capacity=int(capacity),
-                application_note=application_note,
-                application_time=datetime.now(),
-                status='待审核'
-            )
-            
-            db.session.add(application)
-            db.session.commit()
-            
-            flash('课程申请提交成功！请等待管理员审核', 'success')
-            return redirect(url_for('teacher_course_application'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'申请提交失败：{str(e)}', 'error')
-    
-    # 获取当前和未来的学年选项
-    current_year = datetime.now().year
-    academic_years = []
-    for i in range(3):  # 当前学年和未来两个学年
-        year = current_year + i
-        academic_years.append(f"{year}-{year+1}")
-    
-    # 获取教师之前的申请记录
-    applications = CourseApplication.query.filter_by(teacher_id=teacher_id).order_by(
-        CourseApplication.application_time.desc()
-    ).all()
-    
-    return render_template('teacher/course_application.html', 
-                         title='开设课程申请',
-                         academic_years=academic_years,
-                         applications=applications)
-
-# 管理员审核课程申请
-@app.route('/admin/course_applications')
-def admin_course_applications():
-    if 'admin_id' not in session or session.get('user_type') != 'admin':
-        flash('请先登录', 'error')
-        return redirect(url_for('admin_login'))
-    
-    # 获取所有申请
-    pending_applications = CourseApplication.query.filter_by(status='待审核').order_by(
-        CourseApplication.application_time.desc()
-    ).all()
-    
-    approved_applications = CourseApplication.query.filter_by(status='已通过').order_by(
-        CourseApplication.review_time.desc()
-    ).all()
-    
-    rejected_applications = CourseApplication.query.filter_by(status='已拒绝').order_by(
-        CourseApplication.review_time.desc()
-    ).all()
-    
-    return render_template('admin/course_applications.html',
-                         title='课程申请审核',
-                         pending_applications=pending_applications,
-                         approved_applications=approved_applications,
-                         rejected_applications=rejected_applications)
-
-@app.route('/admin/course_application/<int:app_id>/approve', methods=['POST'])
-def admin_course_application_approve(app_id):
-    if 'admin_id' not in session or session.get('user_type') != 'admin':
-        flash('请先登录', 'error')
-        return redirect(url_for('admin_login'))
-    
-    application = CourseApplication.query.get_or_404(app_id)
-    
-    if application.status != '待审核':
-        flash('该申请已处理过', 'error')
-        return redirect(url_for('admin_course_applications'))
-    
-    try:
-        # 获取审核意见
-        review_comments = request.form.get('review_comments', '')
-        
-        # 创建开课记录
-        offered_course = OfferedCourse(
-            course_id=application.course_id,
-            teacher_id=application.teacher_id,
-            academic_year=application.academic_year,
-            semester=application.semester,
-            schedule=application.schedule,
-            location=application.location,
-            capacity=application.capacity,
-            selected_count=0
-        )
-        db.session.add(offered_course)
-        
-        # 更新申请状态
-        application.status = '已通过'
-        application.review_time = datetime.now()
-        application.reviewer_id = session['admin_id']
-        application.review_comments = review_comments
-        
-        db.session.commit()
-        flash('申请已通过审核，课程已成功开设', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'审核处理失败：{str(e)}', 'error')
-    
-    return redirect(url_for('admin_course_applications'))
-
-@app.route('/admin/course_application/<int:app_id>/reject', methods=['POST'])
-def admin_course_application_reject(app_id):
-    if 'admin_id' not in session or session.get('user_type') != 'admin':
-        flash('请先登录', 'error')
-        return redirect(url_for('admin_login'))
-    
-    application = CourseApplication.query.get_or_404(app_id)
-    
-    if application.status != '待审核':
-        flash('该申请已处理过', 'error')
-        return redirect(url_for('admin_course_applications'))
-    
-    try:
-        # 获取拒绝理由
-        review_comments = request.form.get('review_comments', '')
-        
-        # 更新申请状态
-        application.status = '已拒绝'
-        application.review_time = datetime.now()
-        application.reviewer_id = session['admin_id']
-        application.review_comments = review_comments
-        
-        db.session.commit()
-        flash('申请已拒绝', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'操作失败：{str(e)}', 'error')
-    
-    return redirect(url_for('admin_course_applications'))
-
 def _generate_student_id():
     """生成学生学号"""
-    # 更安全的学号生成逻辑：年份 + 顺序号
+    # 简单的学号生成逻辑：年份 + 顺序号
     year = datetime.now().year
+    last_student = Student.query.filter(
+        Student.id.like(f'{year}%')
+    ).order_by(Student.id.desc()).first()
     
-    # 使用数据库锁确保并发安全
-    max_attempts = 10
-    for attempt in range(max_attempts):
-        # 查找当前年份的最大学号
-        last_student = Student.query.filter(
-            Student.id.like(f'{year}%')
-        ).order_by(Student.id.desc()).first()
-        
-        if last_student:
-            last_number = int(last_student.id[-4:])
-            new_number = last_number + 1
-        else:
-            new_number = 1
-        
-        new_id = f'{year}{new_number:04d}'
-        
-        # 检查ID是否已存在（防止并发冲突）
-        existing = Student.query.filter_by(id=new_id).first()
-        if not existing:
-            return new_id
-        
-        # 如果ID已存在，继续下一个数字
-        continue
+    if last_student:
+        last_number = int(last_student.id[-4:])
+        new_number = last_number + 1
+    else:
+        new_number = 1
     
-    # 如果尝试多次仍然失败，抛出异常
-    raise Exception(f"无法生成唯一的学生ID，已尝试 {max_attempts} 次")
+    return f'{year}{new_number:04d}'
 
 def _generate_teacher_id():
     """生成教师工号"""
-    # 更安全的工号生成逻辑：T + 年份 + 4位序号
+    # 简单的工号生成逻辑：T + 年份 + 顺序号
     year = datetime.now().year
+    last_teacher = Teacher.query.filter(
+        Teacher.id.like(f'T{year}%')
+    ).order_by(Teacher.id.desc()).first()
     
-    # 使用数据库锁确保并发安全
-    max_attempts = 10
-    for attempt in range(max_attempts):
-        # 查找当前年份的最大工号
-        last_teacher = Teacher.query.filter(
-            Teacher.id.like(f'T{year}%')
-        ).order_by(Teacher.id.desc()).first()
-        
-        if last_teacher:
-            last_number = int(last_teacher.id[-4:])  # 取最后4位数字
-            new_number = last_number + 1
-        else:
-            new_number = 1
-        
-        new_id = f'T{year}{new_number:04d}'
-        
-        # 检查ID是否已存在（防止并发冲突）
-        existing = Teacher.query.filter_by(id=new_id).first()
-        if not existing:
-            return new_id
-        
-        # 如果ID已存在，继续下一个数字
-        continue
+    if last_teacher:
+        last_number = int(last_teacher.id[-3:])
+        new_number = last_number + 1
+    else:
+        new_number = 1
     
-    # 如果尝试多次仍然失败，抛出异常
-    raise Exception(f"无法生成唯一的教师ID，已尝试 {max_attempts} 次")
+    return f'T{year}{new_number:03d}'
 
 # 学生学费缴纳功能
 @app.route('/student/tuition')

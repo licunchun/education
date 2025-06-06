@@ -206,9 +206,10 @@
     </style>
 </head>
 <body>
-    <div class="container">        <div class="header">
+    <div class="container">
+        <div class="header">
             <h1>申请状态查询</h1>
-            <p>请输入申请编号或手机号查询申请状态</p>
+            <p>请输入申请编号或身份证号查询申请状态</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -230,8 +231,8 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="phone">手机号</label>
-                    <input type="text" id="phone" name="phone" maxlength="11" placeholder="请输入11位手机号">
+                    <label for="id_number">身份证号</label>
+                    <input type="text" id="id_number" name="id_number" maxlength="18" placeholder="请输入18位身份证号">
                 </div>
                 
                 <button type="submit" class="btn">查询申请状态</button>
@@ -290,15 +291,10 @@
                     <div class="info-value">{{ application.department or '未填写' }}</div>
                 </div>
                 {% endif %}
-                  <div class="info-item">
+                
+                <div class="info-item">
                     <div class="info-label">申请时间</div>
-                    <div class="info-value">
-                        {% if application.application_time %}
-                            {{ application.application_time.strftime('%Y-%m-%d %H:%M') }}
-                        {% else %}
-                            未记录
-                        {% endif %}
-                    </div>
+                    <div class="info-value">{{ application.application_time.strftime('%Y-%m-%d %H:%M') }}</div>
                 </div>
                 
                 {% if application.review_time %}
@@ -314,48 +310,30 @@
                     <div class="info-value">{{ application.special_notes }}</div>
                 </div>
                 {% endif %}
-            </div>            
+            </div>
+            
             {% if application.review_comments %}
             <div class="review-section">
                 <div class="review-title">审核意见</div>
                 <div class="info-value">{{ application.review_comments }}</div>
             </div>
             {% endif %}
-            
-            {% if application.status == '已通过' and application.assigned_id %}
-            <div class="review-section">
-                <div class="review-title">账号信息</div>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">{% if application.application_type == 'student' %}学号{% else %}教师号{% endif %}</div>
-                        <div class="info-value">{{ application.assigned_id }}</div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">初始密码</div>
-                        <div class="info-value">{{ application.initial_password }}</div>
-                    </div>
-                    
-                    <div class="info-item full-width">
-                        <div class="info-label">温馨提示</div>
-                        <div class="info-value">请使用上述账号信息登录系统，并及时修改您的初始密码以保证账号安全。</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
+        
         <div class="text-center">
             <a href="{{ url_for('application_status') }}" class="btn btn-secondary">查询其他申请</a>
             <a href="{{ url_for('index') }}" class="btn btn-secondary">返回首页</a>
         </div>
         {% endif %}
-    </div>    <script>
-        // 手机号格式验证
+    </div>
+
+    <script>
+        // 身份证号格式验证
         document.addEventListener('DOMContentLoaded', function() {
-            const phoneInput = document.getElementById('phone');
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function() {
-                    this.value = this.value.replace(/[^0-9]/g, '');
+            const idNumberInput = document.getElementById('id_number');
+            if (idNumberInput) {
+                idNumberInput.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9X]/g, '');
                 });
             }
         });

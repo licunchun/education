@@ -1,0 +1,741 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <!-- 页面标题 -->
+            <div class="text-center mb-4">
+                <h2 class="page-title">
+                    <i class="fas fa-plus-circle text-success"></i>
+                    <span class="ml-2">账户充值</span>
+                </h2>
+                <p class="text-muted">为您的学生账户充值，方便缴纳学费</p>
+            </div>
+
+            <!-- 充值卡片 -->
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-success text-white py-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-wallet fa-2x mr-3"></i>
+                        <div>
+                            <h4 class="mb-0">账户充值</h4>
+                            <small class="opacity-75">安全快捷的在线充值服务</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- 消息提示 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} mr-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- 充值说明 -->
+                    <div class="recharge-info mb-4">
+                        <div class="alert alert-info border-left-info">
+                            <div class="d-flex">
+                                <div class="alert-icon mr-3">
+                                    <i class="fas fa-info-circle fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-2">
+                                        <i class="fas fa-shield-alt mr-1"></i>
+                                        充值服务说明
+                                    </h6>
+                                    <ul class="mb-0 small">
+                                        <li class="mb-1">支持银行卡、支付宝、微信等多种支付方式</li>
+                                        <li class="mb-1">充值金额实时到账，可立即用于缴纳学费</li>
+                                        <li class="mb-1">单次充值范围：¥1.00 - ¥10,000.00</li>
+                                        <li class="mb-0">如需帮助请联系财务部门：<strong>0551-12345678</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 充值表单 -->
+                    <form method="POST" action="{{ url_for('student_recharge') }}" id="rechargeForm" novalidate>
+                        <!-- 充值金额输入 -->
+                        <div class="form-group mb-4">
+                            <label for="amount" class="form-label font-weight-bold">
+                                <i class="fas fa-yuan-sign text-success mr-1"></i>
+                                充值金额
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-success text-white">
+                                        <i class="fas fa-yuan-sign"></i>
+                                    </span>
+                                </div>
+                                <input type="number" class="form-control form-control-lg text-right" 
+                                       id="amount" name="amount" 
+                                       placeholder="请输入充值金额" 
+                                       step="0.01" min="1" max="10000" 
+                                       required autocomplete="off">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">元</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted mt-2">
+                                <i class="fas fa-info mr-1"></i>
+                                请输入 1.00 - 10,000.00 之间的金额
+                            </small>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <!-- 快速选择金额 -->
+                        <div class="form-group mb-4">
+                            <label class="form-label font-weight-bold">
+                                <i class="fas fa-mouse-pointer text-primary mr-1"></i>
+                                快速选择
+                            </label>
+                            <div class="amount-buttons">
+                                <button type="button" class="btn btn-outline-primary amount-btn" data-amount="100">
+                                    ¥100
+                                </button>
+                                <button type="button" class="btn btn-outline-primary amount-btn" data-amount="500">
+                                    ¥500
+                                </button>
+                                <button type="button" class="btn btn-outline-primary amount-btn" data-amount="1000">
+                                    ¥1,000
+                                </button>
+                                <button type="button" class="btn btn-outline-primary amount-btn" data-amount="2000">
+                                    ¥2,000
+                                </button>
+                                <button type="button" class="btn btn-outline-primary amount-btn" data-amount="5000">
+                                    ¥5,000
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary amount-btn" data-amount="8000">
+                                    ¥8,000
+                                    <small class="d-block">（一学年学费）</small>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 支付方式选择 -->
+                        <div class="form-group mb-4">
+                            <label class="form-label font-weight-bold">
+                                <i class="fas fa-credit-card text-info mr-1"></i>
+                                选择支付方式
+                            </label>
+                            <div class="payment-methods">
+                                <div class="payment-option">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="alipay" value="alipay" checked>
+                                    <label class="payment-label" for="alipay">
+                                        <div class="payment-icon">
+                                            <i class="fab fa-alipay text-primary"></i>
+                                        </div>
+                                        <div class="payment-info">
+                                            <div class="payment-name">支付宝</div>
+                                            <small class="text-muted">快速安全支付</small>
+                                        </div>
+                                        <div class="payment-check">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="payment-option">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="wechat" value="wechat">
+                                    <label class="payment-label" for="wechat">
+                                        <div class="payment-icon">
+                                            <i class="fab fa-weixin text-success"></i>
+                                        </div>
+                                        <div class="payment-info">
+                                            <div class="payment-name">微信支付</div>
+                                            <small class="text-muted">便捷移动支付</small>
+                                        </div>
+                                        <div class="payment-check">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="payment-option">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="bankcard" value="bankcard">
+                                    <label class="payment-label" for="bankcard">
+                                        <div class="payment-icon">
+                                            <i class="fas fa-credit-card text-info"></i>
+                                        </div>
+                                        <div class="payment-info">
+                                            <div class="payment-name">银行卡</div>
+                                            <small class="text-muted">支持各大银行</small>
+                                        </div>
+                                        <div class="payment-check">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 服务协议 -->
+                        <div class="form-group mb-4">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="agreement" required>
+                                <label class="custom-control-label" for="agreement">
+                                    我已阅读并同意 
+                                    <a href="#" class="text-primary" data-toggle="modal" data-target="#agreementModal">
+                                        《充值服务协议》
+                                    </a>
+                                </label>
+                                <div class="invalid-feedback">请同意服务协议后继续</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 提交按钮 -->
+                        <div class="form-group text-center">
+                            <div class="btn-group-vertical btn-group-lg w-100">
+                                <button type="submit" class="btn btn-success btn-lg submit-btn">
+                                    <i class="fas fa-credit-card mr-2"></i>
+                                    <span class="btn-text">立即充值</span>
+                                    <span class="btn-amount ml-2" style="display: none;"></span>
+                                </button>
+                                <a href="{{ url_for('student_tuition') }}" class="btn btn-outline-secondary mt-2">
+                                    <i class="fas fa-arrow-left mr-1"></i>
+                                    返回学费缴纳
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                            </button><!-- 充值协议模态框 -->
+<div class="modal fade" id="agreementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-contract mr-2"></i>
+                    充值服务协议
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="agreement-content">
+                    <div class="agreement-section mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-bookmark mr-1"></i>
+                            1. 服务条款
+                        </h6>
+                        <p class="text-justify">
+                            本充值服务由学校财务部门提供，充值金额仅用于缴纳学费、住宿费等教育相关费用。
+                            我们致力于为您提供安全、便捷的在线充值服务。
+                        </p>
+                    </div>
+                    
+                    <div class="agreement-section mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-rules mr-1"></i>
+                            2. 充值规则
+                        </h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item border-0 px-0">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                充值金额实时到账，不可撤销
+                            </li>
+                            <li class="list-group-item border-0 px-0">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                充值金额仅限用于教育相关费用支付
+                            </li>
+                            <li class="list-group-item border-0 px-0">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                账户余额不得转让给他人使用
+                            </li>
+                            <li class="list-group-item border-0 px-0">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                单次充值限额：¥1.00 - ¥10,000.00
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="agreement-section mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-undo mr-1"></i>
+                            3. 退款政策
+                        </h6>
+                        <p class="text-justify">
+                            因特殊情况（如退学、转学等）需要退款的，请携带相关证明材料到财务部门办理退款手续。
+                            退款将在审核通过后5个工作日内原路返回。
+                        </p>
+                    </div>
+                    
+                    <div class="agreement-section">
+                        <h6 class="text-primary">
+                            <i class="fas fa-phone mr-1"></i>
+                            4. 联系我们
+                        </h6>
+                        <div class="contact-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="contact-item mb-2">
+                                        <i class="fas fa-phone-alt text-success mr-2"></i>
+                                        <strong>服务热线：</strong>0551-12345678
+                                    </div>
+                                    <div class="contact-item mb-2">
+                                        <i class="fas fa-envelope text-info mr-2"></i>
+                                        <strong>邮箱：</strong>finance@school.edu.cn
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="contact-item mb-2">
+                                        <i class="fas fa-clock text-warning mr-2"></i>
+                                        <strong>工作时间：</strong>周一至周五
+                                    </div>
+                                    <div class="contact-item">
+                                        <i class="fas fa-map-marker-alt text-danger mr-2"></i>
+                                        <strong>时间：</strong>8:30 - 17:30
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>
+                    关闭
+                </button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="acceptAgreement()">
+                    <i class="fas fa-check mr-1"></i>
+                    我已阅读并同意
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const submitBtn = document.querySelector('.submit-btn');
+    const btnAmount = document.querySelector('.btn-amount');
+    
+    // 快速选择金额
+    document.querySelectorAll('.amount-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const amount = this.getAttribute('data-amount');
+            amountInput.value = amount;
+            
+            // 更新按钮状态
+            updateAmountButtons(this);
+            updateSubmitButton();
+            validateAmount();
+        });
+    });
+    
+    // 金额输入监听
+    amountInput.addEventListener('input', function() {
+        updateAmountButtons();
+        updateSubmitButton();
+        validateAmount();
+    });
+    
+    // 支付方式选择
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updatePaymentMethods();
+        });
+    });
+    
+    // 表单验证和提交
+    document.getElementById('rechargeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (validateForm()) {
+            const amount = parseFloat(amountInput.value);
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            
+            // 确认对话框
+            if (confirmRecharge(amount, paymentMethod)) {
+                this.submit();
+            }
+        }
+    });
+    
+    // 初始化
+    updatePaymentMethods();
+    updateSubmitButton();
+});
+
+// 更新金额按钮状态
+function updateAmountButtons(activeBtn = null) {
+    const currentAmount = document.getElementById('amount').value;
+    
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (activeBtn === btn || btn.getAttribute('data-amount') === currentAmount) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// 更新提交按钮
+function updateSubmitButton() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const btnAmount = document.querySelector('.btn-amount');
+    
+    if (amount && amount > 0) {
+        btnAmount.textContent = `¥${amount.toFixed(2)}`;
+        btnAmount.style.display = 'inline';
+    } else {
+        btnAmount.style.display = 'none';
+    }
+}
+
+// 更新支付方式UI
+function updatePaymentMethods() {
+    document.querySelectorAll('.payment-option').forEach(option => {
+        const radio = option.querySelector('input[type="radio"]');
+        const label = option.querySelector('.payment-label');
+        
+        if (radio.checked) {
+            label.classList.add('selected');
+        } else {
+            label.classList.remove('selected');
+        }
+    });
+}
+
+// 验证金额
+function validateAmount() {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value);
+    
+    amountInput.classList.remove('is-valid', 'is-invalid');
+    
+    if (amount && amount >= 1 && amount <= 10000) {
+        amountInput.classList.add('is-valid');
+        return true;
+    } else if (amountInput.value) {
+        amountInput.classList.add('is-invalid');
+        const feedback = amountInput.parentNode.parentNode.querySelector('.invalid-feedback');
+        if (amount < 1) {
+            feedback.textContent = '充值金额不能少于¥1.00';
+        } else if (amount > 10000) {
+            feedback.textContent = '充值金额不能超过¥10,000.00';
+        } else {
+            feedback.textContent = '请输入有效的金额';
+        }
+        return false;
+    }
+    return false;
+}
+
+// 表单验证
+function validateForm() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const agreement = document.getElementById('agreement').checked;
+    
+    let isValid = true;
+    
+    // 验证金额
+    if (!validateAmount()) {
+        isValid = false;
+    }
+    
+    // 验证协议
+    const agreementControl = document.getElementById('agreement');
+    if (!agreement) {
+        agreementControl.classList.add('is-invalid');
+        isValid = false;
+    } else {
+        agreementControl.classList.remove('is-invalid');
+    }
+    
+    return isValid;
+}
+
+// 确认充值
+function confirmRecharge(amount, paymentMethod) {
+    const methodNames = {
+        'alipay': '支付宝',
+        'wechat': '微信支付',
+        'bankcard': '银行卡'
+    };
+    
+    const message = `确认要使用${methodNames[paymentMethod]}充值 ¥${amount.toFixed(2)} 元吗？\n\n充值成功后将立即到账，不可撤销。`;
+    
+    return confirm(message);
+}
+
+// 接受协议
+function acceptAgreement() {
+    document.getElementById('agreement').checked = true;
+    document.getElementById('agreement').classList.remove('is-invalid');
+}
+</script>
+
+<style>
+/* 页面整体样式 */
+.page-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* 渐变背景 */
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+/* 卡片样式 */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+/* 信息提示框 */
+.border-left-info {
+    border-left: 4px solid #17a2b8 !important;
+    background-color: rgba(23, 162, 184, 0.05);
+}
+
+.alert-icon {
+    flex-shrink: 0;
+}
+
+/* 表单控件 */
+.form-label {
+    color: #495057;
+    margin-bottom: 0.75rem;
+}
+
+.form-control-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+}
+
+.input-group-text {
+    font-weight: 600;
+}
+
+/* 快速选择按钮 */
+.amount-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.amount-btn {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid #007bff;
+}
+
+.amount-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.25);
+}
+
+.amount-btn.active {
+    background-color: #007bff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+}
+
+.amount-btn small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* 支付方式 */
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payment-option {
+    position: relative;
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-label {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.payment-label:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+}
+
+.payment-label.selected {
+    border-color: #007bff;
+    background-color: rgba(0,123,255,0.05);
+    box-shadow: 0 2px 12px rgba(0,123,255,0.2);
+}
+
+.payment-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    width: 40px;
+    text-align: center;
+}
+
+.payment-info {
+    flex: 1;
+}
+
+.payment-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.payment-check {
+    font-size: 1.25rem;
+    color: #007bff;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.payment-label.selected .payment-check {
+    opacity: 1;
+}
+
+/* 自定义复选框 */
+.custom-control-label {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+/* 提交按钮 */
+.submit-btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40,167,69,0.4);
+}
+
+.btn-amount {
+    background: rgba(255,255,255,0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+/* 模态框样式 */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.agreement-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.agreement-section {
+    padding: 0.75rem 0;
+}
+
+.contact-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .amount-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .amount-btn {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .payment-label {
+        padding: 0.75rem 1rem;
+    }
+    
+    .payment-icon {
+        font-size: 1.25rem;
+        margin-right: 0.75rem;
+        width: 30px;
+    }
+    
+    .submit-btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .amount-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .payment-methods {
+        gap: 0.5rem;
+    }
+    
+    .modal-dialog {
+        margin: 1rem;
+    }
+}
+</style>
+{% endblock %}
