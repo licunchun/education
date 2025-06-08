@@ -7,7 +7,7 @@ from education_system.models.database import (
     CourseApplication
 )
 import hashlib
-from datetime import datetime
+from datetime import datetime, date
 
 def hash_password(password):
     """简单的密码哈希函数"""
@@ -809,21 +809,124 @@ def admin_student_management():
     if 'admin_id' not in session or session.get('user_type') != 'admin':
         flash('请先登录', 'error')
         return redirect(url_for('admin_login'))
-    return "学生管理功能开发中..."
+    
+    # 获取所有学生信息
+    students = db.session.query(
+        Student, Major
+    ).outerjoin(Major, Student.major_id == Major.id)\
+     .order_by(Student.id)\
+     .all()
+    
+    # 格式化学生数据
+    students_data = []
+    for student, major in students:
+        student_info = {
+            'student_id': student.id,
+            'name': student.name,
+            'gender': student.gender,
+            'major': major.name if major else '未设置',
+            'class_name': '未设置',  # 暂时设为未设置，因为Student表中没有class_id字段
+            'admission_year': student.enrollment_date.year if student.enrollment_date else '未设置',
+            'status': student.status,
+            'phone': student.phone,
+            'email': student.email,
+            'address': student.address
+        }
+        students_data.append(student_info)
+    
+    # 获取所有专业信息用于添加/编辑
+    majors = Major.query.all()
+    
+    return render_template('admin/student_management.html', 
+                         title='学生管理',
+                         students=students_data,
+                         majors=majors)
 
 @app.route('/admin/teacher_management')
 def admin_teacher_management():
     if 'admin_id' not in session or session.get('user_type') != 'admin':
         flash('请先登录', 'error')
         return redirect(url_for('admin_login'))
-    return "教师管理功能开发中..."
+    
+    # 获取所有教师信息
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).order_by(Teacher.id).all()
+    
+    # 格式化教师数据
+    teachers_data = []
+    for teacher, user in teachers:
+        teacher_info = {
+            'teacher_id': teacher.id,
+            'name': teacher.name,
+            'gender': teacher.gender,
+            'department': teacher.college,
+            'title': teacher.title,
+            'email': user.contact,
+            'phone': teacher.contact,
+            'status': '在职' if user.status else '离职'
+        }
+        teachers_data.append(teacher_info)
+    
+    return render_template('admin/teacher_management.html', 
+                         title='教师管理',
+                         teachers=teachers_data)
 
 @app.route('/admin/course_management')
 def admin_course_management():
     if 'admin_id' not in session or session.get('user_type') != 'admin':
         flash('请先登录', 'error')
         return redirect(url_for('admin_login'))
-    return "课程管理功能开发中..."
+    
+    # 获取所有开设的课程
+    offered_courses = db.session.query(
+        OfferedCourse,
+        Course.name.label('course_name'),
+        Teacher.name.label('teacher_name'),
+        Course.credits,
+        db.func.count(CourseSelection.id).label('selected')
+    ).join(Course, OfferedCourse.course_id == Course.id)\
+     .join(Teacher, OfferedCourse.teacher_id == Teacher.id)\
+     .outerjoin(CourseSelection, db.and_(
+        CourseSelection.offered_course_id == OfferedCourse.id,
+        CourseSelection.status == '已选'
+     ))\
+     .group_by(OfferedCourse.id, Course.name, Teacher.name, Course.credits)\
+     .order_by(OfferedCourse.academic_year.desc(), OfferedCourse.semester.desc())\
+     .all()
+    
+    # 格式化开设课程数据
+    offered_courses_data = []
+    for offered, course_name, teacher_name, credits, selected in offered_courses:
+        offered_info = {
+            'id': offered.id,
+            'course_name': course_name,
+            'teacher_name': teacher_name,
+            'academic_year': offered.academic_year,
+            'semester': offered.semester,
+            'credits': credits,
+            'capacity': offered.capacity,
+            'selected': selected or 0
+        }
+        offered_courses_data.append(offered_info)
+      # 获取所有课程（课程库）
+    courses = Course.query.order_by(Course.code).all()
+    courses_data = []
+    for course in courses:
+        course_info = {
+            'course_id': course.id,
+            'course_code': course.code,
+            'course_name': course.name,
+            'credits': course.credits,
+            'hours': course.hours,
+            'course_type': course.course_type,
+            'college': course.college,
+            'description': course.description
+        }
+        courses_data.append(course_info)
+    
+    return render_template('admin/course_management.html', 
+                         title='课程管理',
+                         offered_courses=offered_courses_data,
+                         courses=courses_data)
 
 # 管理员审核注册申请
 @app.route('/admin/applications')
@@ -1175,6 +1278,221 @@ def admin_course_application_reject(app_id):
     
     return redirect(url_for('admin_course_applications'))
 
+# 学生管理API路由
+@app.route('/admin/add_student', methods=['POST'])
+def admin_add_student():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        # 获取表单数据
+        student_id = request.form.get('student_id')
+        name = request.form.get('name')
+        gender = request.form.get('gender')
+        major_id = request.form.get('major_id')
+        class_id = request.form.get('class_id')
+        admission_year = request.form.get('admission_year')
+        phone = request.form.get('phone')
+        email = request.form.get('email')
+        password = request.form.get('password', '123456')  # 默认密码
+        
+        # 验证学号是否已存在
+        existing_student = Student.query.get(student_id)
+        if existing_student:
+            return jsonify({'status': 'error', 'message': '学号已存在'}), 400
+        
+        # 创建用户账户
+        user = User(
+            username=student_id,
+            password=hash_password(password),
+            real_name=name,
+            role_id=3,  # 学生角色ID
+            contact=email,
+            status=True
+        )
+        db.session.add(user)
+        db.session.flush()  # 获取用户ID
+          # 创建学生记录
+        student = Student(
+            id=student_id,
+            name=name,
+            gender=gender,
+            major_id=int(major_id) if major_id else None,
+            enrollment_date=date(int(admission_year), 9, 1) if admission_year else None,
+            phone=phone,
+            email=email,
+            status='在读',
+            user_id=user.id
+        )
+        db.session.add(student)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '学生添加成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'添加失败：{str(e)}'}), 500
+
+@app.route('/admin/update_student_status', methods=['POST'])
+def admin_update_student_status():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        student_id = request.form.get('student_id')
+        new_status = request.form.get('status')
+        
+        student = Student.query.get(student_id)
+        if not student:
+            return jsonify({'status': 'error', 'message': '学生不存在'}), 404
+        
+        student.status = new_status
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '状态更新成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'更新失败：{str(e)}'}), 500
+
+@app.route('/admin/delete_student', methods=['POST'])
+def admin_delete_student():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        student_id = request.form.get('student_id')
+        
+        student = Student.query.get(student_id)
+        if not student:
+            return jsonify({'status': 'error', 'message': '学生不存在'}), 404
+        
+        # 检查是否有选课记录
+        has_courses = CourseSelection.query.filter_by(student_id=student_id).first()
+        if has_courses:
+            return jsonify({'status': 'error', 'message': '该学生有选课记录，无法删除'}), 400
+        
+        # 删除用户账户
+        if student.user:
+            db.session.delete(student.user)
+        
+        # 删除学生记录
+        db.session.delete(student)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '学生删除成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'删除失败：{str(e)}'}), 500
+
+# 教师管理API路由
+@app.route('/admin/add_teacher', methods=['POST'])
+def admin_add_teacher():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        # 获取表单数据
+        teacher_id = request.form.get('teacher_id')
+        name = request.form.get('name')
+        gender = request.form.get('gender')
+        department = request.form.get('department')
+        title = request.form.get('title')
+        phone = request.form.get('phone')
+        email = request.form.get('email')
+        password = request.form.get('password', '123456')  # 默认密码
+        
+        # 验证工号是否已存在
+        existing_teacher = Teacher.query.get(teacher_id)
+        if existing_teacher:
+            return jsonify({'status': 'error', 'message': '工号已存在'}), 400
+        
+        # 创建用户账户
+        user = User(
+            username=teacher_id,
+            password=hash_password(password),
+            real_name=name,
+            role_id=2,  # 教师角色ID
+            contact=email,
+            status=True
+        )
+        db.session.add(user)
+        db.session.flush()  # 获取用户ID
+        
+        # 创建教师记录
+        teacher = Teacher(
+            id=teacher_id,
+            name=name,
+            gender=gender,
+            college=department,
+            title=title,
+            contact=phone,
+            user_id=user.id
+        )
+        db.session.add(teacher)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '教师添加成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'添加失败：{str(e)}'}), 500
+
+@app.route('/admin/update_teacher_status', methods=['POST'])
+def admin_update_teacher_status():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        teacher_id = request.form.get('teacher_id')
+        new_status = request.form.get('status')
+        
+        teacher = Teacher.query.get(teacher_id)
+        if not teacher:
+            return jsonify({'status': 'error', 'message': '教师不存在'}), 404
+        
+        # 更新用户状态
+        if teacher.user:
+            teacher.user.status = (new_status == '在职')
+            db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '状态更新成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'更新失败：{str(e)}'}), 500
+
+@app.route('/admin/delete_teacher', methods=['POST'])
+def admin_delete_teacher():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '权限不足'}), 403
+    
+    try:
+        teacher_id = request.form.get('teacher_id')
+        
+        teacher = Teacher.query.get(teacher_id)
+        if not teacher:
+            return jsonify({'status': 'error', 'message': '教师不存在'}), 404
+        
+        # 检查是否有开设课程
+        has_courses = OfferedCourse.query.filter_by(teacher_id=teacher_id).first()
+        if has_courses:
+            return jsonify({'status': 'error', 'message': '该教师有开设课程，无法删除'}), 400
+        
+        # 删除用户账户
+        if teacher.user:
+            db.session.delete(teacher.user)
+        
+        # 删除教师记录
+        db.session.delete(teacher)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '教师删除成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'删除失败：{str(e)}'}), 500
 def _generate_student_id():
     """生成学生学号"""
     # 更安全的学号生成逻辑：年份 + 顺序号
@@ -1400,3 +1718,291 @@ def student_recharge():
             flash(f'充值失败：{str(e)}', 'error')
     
     return render_template('student/recharge.html', title='账户充值')
+
+@app.route('/admin/grade_management')
+def admin_grade_management():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        flash('请先登录', 'error')
+        return redirect(url_for('admin_login'))
+    
+    # 获取所有待审核的成绩
+    pending_grades = db.session.query(
+        Grade,
+        Student.name.label('student_name'),
+        Student.id.label('student_id'),
+        Course.name.label('course_name'),
+        Course.code.label('course_code'),
+        Teacher.name.label('teacher_name'),
+        OfferedCourse.academic_year,
+        OfferedCourse.semester
+    ).join(Student, Grade.student_id == Student.id)\
+     .join(OfferedCourse, Grade.offered_course_id == OfferedCourse.id)\
+     .join(Course, OfferedCourse.course_id == Course.id)\
+     .join(Teacher, OfferedCourse.teacher_id == Teacher.id)\
+     .filter(Grade.status == '已录入')\
+     .order_by(Grade.input_time.desc())\
+     .all()
+    
+    # 格式化待审核成绩数据
+    pending_grades_data = []
+    for grade, student_name, student_id, course_name, course_code, teacher_name, academic_year, semester in pending_grades:
+        grade_info = {
+            'id': grade.id,
+            'student_id': student_id,
+            'student_name': student_name,
+            'course_code': course_code,
+            'course_name': course_name,
+            'teacher_name': teacher_name,
+            'academic_year': academic_year,
+            'semester': semester,
+            'regular_grade': grade.regular_grade,
+            'exam_grade': grade.exam_grade,
+            'final_grade': grade.final_grade,
+            'gpa': grade.gpa,
+            'input_time': grade.input_time,
+            'status': grade.status
+        }
+        pending_grades_data.append(grade_info)
+    
+    # 获取已审核的成绩
+    approved_grades = db.session.query(
+        Grade,
+        Student.name.label('student_name'),
+        Student.id.label('student_id'),
+        Course.name.label('course_name'),
+        Course.code.label('course_code'),
+        Teacher.name.label('teacher_name'),
+        OfferedCourse.academic_year,
+        OfferedCourse.semester
+    ).join(Student, Grade.student_id == Student.id)\
+     .join(OfferedCourse, Grade.offered_course_id == OfferedCourse.id)\
+     .join(Course, OfferedCourse.course_id == Course.id)\
+     .join(Teacher, OfferedCourse.teacher_id == Teacher.id)\
+     .filter(Grade.status == '已审核')\
+     .order_by(Grade.input_time.desc())\
+     .limit(100)\
+     .all()
+    
+    # 格式化已审核成绩数据
+    approved_grades_data = []
+    for grade, student_name, student_id, course_name, course_code, teacher_name, academic_year, semester in approved_grades:
+        grade_info = {
+            'id': grade.id,
+            'student_id': student_id,
+            'student_name': student_name,
+            'course_code': course_code,
+            'course_name': course_name,
+            'teacher_name': teacher_name,
+            'academic_year': academic_year,
+            'semester': semester,
+            'regular_grade': grade.regular_grade,
+            'exam_grade': grade.exam_grade,
+            'final_grade': grade.final_grade,
+            'gpa': grade.gpa,
+            'input_time': grade.input_time,
+            'status': grade.status
+        }
+        approved_grades_data.append(grade_info)
+    
+    # 统计信息
+    stats = {
+        'pending_count': len(pending_grades_data),
+        'approved_count': len(approved_grades_data),
+        'total_grades': Grade.query.count()
+    }
+    
+    return render_template('admin/grade_management.html',
+                         title='成绩管理',
+                         pending_grades=pending_grades_data,
+                         approved_grades=approved_grades_data,
+                         stats=stats)
+
+@app.route('/admin/approve_grade/<int:grade_id>', methods=['POST'])
+def admin_approve_grade(grade_id):
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        grade = Grade.query.get_or_404(grade_id)
+        grade.status = '已审核'
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '成绩审核通过'})
+    except Exception as e:
+        print(f"Error approving grade: {e}")
+        return jsonify({'status': 'error', 'message': '审核失败，请重试'})
+
+@app.route('/admin/reject_grade/<int:grade_id>', methods=['POST'])
+def admin_reject_grade(grade_id):
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        grade = Grade.query.get_or_404(grade_id)
+        grade.status = '未审核'
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '成绩已退回，要求重新录入'})
+    except Exception as e:
+        print(f"Error rejecting grade: {e}")
+        return jsonify({'status': 'error', 'message': '操作失败，请重试'})
+
+@app.route('/admin/batch_approve_grades', methods=['POST'])
+def admin_batch_approve_grades():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        grade_ids = request.json.get('grade_ids', [])
+        if not grade_ids:
+            return jsonify({'status': 'error', 'message': '未选择成绩记录'})
+        
+        updated_count = 0
+        for grade_id in grade_ids:
+            grade = Grade.query.get(grade_id)
+            if grade and grade.status == '已录入':
+                grade.status = '已审核'
+                updated_count += 1
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'成功审核 {updated_count} 条成绩记录'})
+    except Exception as e:
+        print(f"Error batch approving grades: {e}")
+        return jsonify({'status': 'error', 'message': '批量审核失败，请重试'})
+
+# 课程管理相关API
+@app.route('/admin/add_course', methods=['POST'])
+def admin_add_course():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    try:
+        course_id = request.form.get('course_id')
+        course_name = request.form.get('course_name')
+        credits = float(request.form.get('credits'))
+        hours = int(request.form.get('hours', 16))  # 默认16学时
+        course_type = request.form.get('course_type')
+        college = request.form.get('college', '')
+        description = request.form.get('description')
+        
+        # 检查课程代码是否已存在
+        existing_course = Course.query.filter_by(code=course_id).first()
+        if existing_course:
+            return jsonify({'status': 'error', 'message': '课程代码已存在'})
+        
+        # 创建新课程
+        new_course = Course(
+            code=course_id,
+            name=course_name,
+            credits=credits,
+            hours=hours,
+            course_type=course_type,
+            college=college,
+            description=description
+        )
+        
+        db.session.add(new_course)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '课程添加成功'})
+    except Exception as e:
+        print(f"Error adding course: {e}")
+        return jsonify({'status': 'error', 'message': '添加失败，请重试'})
+
+@app.route('/admin/add_offered_course', methods=['POST'])
+def admin_add_offered_course():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        course_id = request.form.get('course_id')
+        teacher_id = request.form.get('teacher_id')
+        academic_year = request.form.get('academic_year')
+        semester = request.form.get('semester')
+        capacity = int(request.form.get('capacity'))
+        
+        # 检查课程和教师是否存在
+        course = Course.query.get(course_id)
+        teacher = Teacher.query.get(teacher_id)
+        
+        if not course:
+            return jsonify({'status': 'error', 'message': '课程不存在'})
+        if not teacher:
+            return jsonify({'status': 'error', 'message': '教师不存在'})
+        
+        # 检查是否已开设相同的课程
+        existing_offered = OfferedCourse.query.filter_by(
+            course_id=course_id,
+            teacher_id=teacher_id,
+            academic_year=academic_year,
+            semester=semester
+        ).first()
+        
+        if existing_offered:
+            return jsonify({'status': 'error', 'message': '该教师在此学期已开设此课程'})
+        
+        # 创建开设课程
+        new_offered_course = OfferedCourse(
+            course_id=course_id,
+            teacher_id=teacher_id,
+            academic_year=academic_year,
+            semester=semester,
+            capacity=capacity
+        )
+        
+        db.session.add(new_offered_course)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '课程开设成功'})
+    except Exception as e:
+        print(f"Error adding offered course: {e}")
+        return jsonify({'status': 'error', 'message': '开设失败，请重试'})
+
+@app.route('/admin/delete_course', methods=['POST'])
+def admin_delete_course():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        course_id = request.form.get('course_id')
+        
+        # 检查是否有开设的课程
+        offered_courses = OfferedCourse.query.filter_by(course_id=course_id).first()
+        if offered_courses:
+            return jsonify({'status': 'error', 'message': '该课程已有开设记录，无法删除'})
+        
+        # 删除课程
+        course = Course.query.get(course_id)
+        if course:
+            db.session.delete(course)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': '课程删除成功'})
+        else:
+            return jsonify({'status': 'error', 'message': '课程不存在'})
+    except Exception as e:
+        print(f"Error deleting course: {e}")
+        return jsonify({'status': 'error', 'message': '删除失败，请重试'})
+
+@app.route('/admin/delete_offered_course', methods=['POST'])
+def admin_delete_offered_course():
+    if 'admin_id' not in session or session.get('user_type') != 'admin':
+        return jsonify({'status': 'error', 'message': '请先登录'})
+    
+    try:
+        offered_course_id = request.form.get('offered_course_id')
+        
+        # 检查是否有学生选课
+        selections = CourseSelection.query.filter_by(offered_course_id=offered_course_id).first()
+        if selections:
+            return jsonify({'status': 'error', 'message': '该课程已有学生选课，无法删除'})
+        
+        # 删除开设课程
+        offered_course = OfferedCourse.query.get(offered_course_id)
+        if offered_course:
+            db.session.delete(offered_course)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': '开设课程删除成功'})
+        else:
+            return jsonify({'status': 'error', 'message': '开设课程不存在'})
+    except Exception as e:
+        print(f"Error deleting offered course: {e}")
+        return jsonify({'status': 'error', 'message': '删除失败，请重试'})

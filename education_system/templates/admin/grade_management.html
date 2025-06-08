@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line"></i> 成绩管理</h2>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回控制面板
+                </a>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">待审核成绩</h5>
+                            <h2 class="text-warning">{{ stats.pending_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">已审核成绩</h5>
+                            <h2 class="text-success">{{ stats.approved_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">总成绩记录</h5>
+                            <h2 class="text-info">{{ stats.total_grades }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 成绩管理选项卡 -->
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#pending" data-toggle="tab">
+                                待审核成绩 
+                                {% if stats.pending_count > 0 %}
+                                    <span class="badge badge-warning">{{ stats.pending_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#approved" data-toggle="tab">已审核成绩</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <!-- 待审核成绩 -->
+                        <div class="tab-pane fade show active" id="pending">
+                            {% if pending_grades %}
+                            <div class="mb-3">
+                                <button class="btn btn-success" onclick="batchApproveGrades()" id="batchApproveBtn" disabled>
+                                    <i class="fas fa-check"></i> 批量审核通过
+                                </button>
+                                <button class="btn btn-info" onclick="selectAllGrades()">
+                                    <i class="fas fa-check-square"></i> 全选
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearSelection()">
+                                    <i class="fas fa-square"></i> 清除选择
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                            </th>
+                                            <th>学号</th>
+                                            <th>学生姓名</th>
+                                            <th>课程代码</th>
+                                            <th>课程名称</th>
+                                            <th>任课教师</th>
+                                            <th>学年学期</th>
+                                            <th>平时成绩</th>
+                                            <th>期末成绩</th>
+                                            <th>总评成绩</th>
+                                            <th>绩点</th>
+                                            <th>录入时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for grade in pending_grades %}
+                                        <tr id="grade-row-{{ grade.id }}">
+                                            <td>
+                                                <input type="checkbox" class="grade-checkbox" value="{{ grade.id }}" onchange="updateBatchButton()">
+                                            </td>
+                                            <td><strong>{{ grade.student_id }}</strong></td>
+                                            <td>{{ grade.student_name }}</td>
+                                            <td>{{ grade.course_code }}</td>
+                                            <td>{{ grade.course_name }}</td>
+                                            <td>{{ grade.teacher_name }}</td>
+                                            <td>{{ grade.academic_year }} {{ grade.semester }}</td>
+                                            <td>
+                                                {% if grade.regular_grade is not none %}
+                                                    <span class="badge badge-info">{{ "%.1f"|format(grade.regular_grade) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">未录入</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.exam_grade is not none %}
+                                                    <span class="badge badge-primary">{{ "%.1f"|format(grade.exam_grade) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">未录入</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.final_grade is not none %}
+                                                    <span class="badge badge-{% if grade.final_grade >= 90 %}success{% elif grade.final_grade >= 80 %}info{% elif grade.final_grade >= 70 %}warning{% elif grade.final_grade >= 60 %}secondary{% else %}danger{% endif %}">
+                                                        {{ "%.1f"|format(grade.final_grade) }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">未计算</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.gpa is not none %}
+                                                    <span class="badge badge-{% if grade.gpa >= 3.5 %}success{% elif grade.gpa >= 3.0 %}info{% elif grade.gpa >= 2.0 %}warning{% elif grade.gpa >= 1.0 %}secondary{% else %}danger{% endif %}">
+                                                        {{ "%.1f"|format(grade.gpa) }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">未计算</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ grade.input_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-success" onclick="approveGrade({{ grade.id }})" title="审核通过">
+                                                        <i class="fas fa-check"></i> 通过
+                                                    </button>
+                                                    <button class="btn btn-danger" onclick="rejectGrade({{ grade.id }})" title="退回重新录入">
+                                                        <i class="fas fa-times"></i> 退回
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                <h5 class="text-muted">暂无待审核的成绩</h5>
+                                <p class="text-muted">所有成绩都已审核完成</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 已审核成绩 -->
+                        <div class="tab-pane fade" id="approved">
+                            {% if approved_grades %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>学号</th>
+                                            <th>学生姓名</th>
+                                            <th>课程代码</th>
+                                            <th>课程名称</th>
+                                            <th>任课教师</th>
+                                            <th>学年学期</th>
+                                            <th>平时成绩</th>
+                                            <th>期末成绩</th>
+                                            <th>总评成绩</th>
+                                            <th>绩点</th>
+                                            <th>录入时间</th>
+                                            <th>状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for grade in approved_grades %}
+                                        <tr>
+                                            <td><strong>{{ grade.student_id }}</strong></td>
+                                            <td>{{ grade.student_name }}</td>
+                                            <td>{{ grade.course_code }}</td>
+                                            <td>{{ grade.course_name }}</td>
+                                            <td>{{ grade.teacher_name }}</td>
+                                            <td>{{ grade.academic_year }} {{ grade.semester }}</td>
+                                            <td>
+                                                {% if grade.regular_grade is not none %}
+                                                    <span class="badge badge-info">{{ "%.1f"|format(grade.regular_grade) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">未录入</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.exam_grade is not none %}
+                                                    <span class="badge badge-primary">{{ "%.1f"|format(grade.exam_grade) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">未录入</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.final_grade is not none %}
+                                                    <span class="badge badge-{% if grade.final_grade >= 90 %}success{% elif grade.final_grade >= 80 %}info{% elif grade.final_grade >= 70 %}warning{% elif grade.final_grade >= 60 %}secondary{% else %}danger{% endif %}">
+                                                        {{ "%.1f"|format(grade.final_grade) }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">未计算</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if grade.gpa is not none %}
+                                                    <span class="badge badge-{% if grade.gpa >= 3.5 %}success{% elif grade.gpa >= 3.0 %}info{% elif grade.gpa >= 2.0 %}warning{% elif grade.gpa >= 1.0 %}secondary{% else %}danger{% endif %}">
+                                                        {{ "%.1f"|format(grade.gpa) }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">未计算</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ grade.input_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <span class="badge badge-success">已审核</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无已审核的成绩</h5>
+                                <p class="text-muted">请等待教师录入成绩后进行审核</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 审核单个成绩
+function approveGrade(gradeId) {
+    if (confirm('确定要审核通过这条成绩记录吗？')) {
+        fetch(`/admin/approve_grade/${gradeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+                document.getElementById(`grade-row-${gradeId}`).remove();
+                updatePendingCount();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('操作失败，请重试', 'danger');
+        });
+    }
+}
+
+// 退回成绩
+function rejectGrade(gradeId) {
+    if (confirm('确定要退回这条成绩记录吗？将要求教师重新录入。')) {
+        fetch(`/admin/reject_grade/${gradeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+                document.getElementById(`grade-row-${gradeId}`).remove();
+                updatePendingCount();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('操作失败，请重试', 'danger');
+        });
+    }
+}
+
+// 批量审核
+function batchApproveGrades() {
+    const checkedBoxes = document.querySelectorAll('.grade-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        showMessage('请先选择要审核的成绩记录', 'warning');
+        return;
+    }
+    
+    if (confirm(`确定要批量审核通过选中的 ${checkedBoxes.length} 条成绩记录吗？`)) {
+        const gradeIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        
+        fetch('/admin/batch_approve_grades', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({grade_ids: gradeIds})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+                // 移除已审核的行
+                gradeIds.forEach(gradeId => {
+                    const row = document.getElementById(`grade-row-${gradeId}`);
+                    if (row) row.remove();
+                });
+                updatePendingCount();
+                clearSelection();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('批量审核失败，请重试', 'danger');
+        });
+    }
+}
+
+// 全选/取消全选
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.grade-checkbox');
+    
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateBatchButton();
+}
+
+// 选择所有成绩
+function selectAllGrades() {
+    const checkboxes = document.querySelectorAll('.grade-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    document.getElementById('selectAll').checked = true;
+    updateBatchButton();
+}
+
+// 清除选择
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.grade-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateBatchButton();
+}
+
+// 更新批量操作按钮状态
+function updateBatchButton() {
+    const checkedBoxes = document.querySelectorAll('.grade-checkbox:checked');
+    const batchBtn = document.getElementById('batchApproveBtn');
+    
+    if (checkedBoxes.length > 0) {
+        batchBtn.disabled = false;
+        batchBtn.innerHTML = `<i class="fas fa-check"></i> 批量审核通过 (${checkedBoxes.length})`;
+    } else {
+        batchBtn.disabled = true;
+        batchBtn.innerHTML = '<i class="fas fa-check"></i> 批量审核通过';
+    }
+}
+
+// 更新待审核数量
+function updatePendingCount() {
+    const currentCount = document.querySelectorAll('#pending tbody tr').length;
+    const badge = document.querySelector('.nav-link .badge');
+    if (badge) {
+        if (currentCount > 0) {
+            badge.textContent = currentCount;
+        } else {
+            badge.remove();
+        }
+    }
+}
+
+// 显示消息
+function showMessage(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// 页面加载完成后绑定事件
+document.addEventListener('DOMContentLoaded', function() {
+    updateBatchButton();
+});
+</script>
+
+<style>
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: white;
+    color: #007bff;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}
